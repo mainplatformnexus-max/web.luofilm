@@ -806,19 +806,20 @@ const AgentSection = ({ agents, search }: { agents: AgentItem[]; search: string 
     const { type, agent } = actionModal;
     try {
       if (type === "block") { await updateAgent(agent.id, { status: "blocked" }); toast({ title: "Agent blocked" }); }
-            else if (type === "activate") { 
-              const plan = adminPlans.find(p => p.name === selectedPlan);
-              const expiry = new Date();
-              if (plan?.duration.includes("Week")) expiry.setDate(expiry.getDate() + 7);
-              else if (plan?.duration.includes("Month")) expiry.setMonth(expiry.getMonth() + 1);
+      else if (type === "activate") { 
+        const plan = adminPlans.find(p => p.name === selectedPlan);
+        const now = new Date();
+        const expiry = new Date(now);
+        const days = (plan as any)?.days || (plan?.duration.includes("Week") ? 7 : 30);
+        expiry.setDate(expiry.getDate() + days);
 
-              await updateAgent(agent.id, { 
-                status: "active", 
-                plan: selectedPlan || agent.plan,
-                planExpiry: expiry.toISOString()
-              }); 
-              toast({ title: "Agent activated" }); 
-            }
+        await updateAgent(agent.id, { 
+          status: "active", 
+          plan: selectedPlan || agent.plan,
+          planExpiry: expiry.toISOString().split("T")[0]
+        }); 
+        toast({ title: "Agent activated" }); 
+      }
       else if (type === "remove") { await deleteAgent(agent.id); toast({ title: "Agent removed" }); }
     } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
     setActionModal(null);
@@ -921,13 +922,13 @@ const UsersSection = ({ users, search }: { users: UserItem[]; search: string }) 
       else if (type === "activate" || type === "upgrade") { 
         const plan = adminPlans.find(p => p.name === selectedPlan);
         const expiry = new Date();
-        if (plan?.duration.includes("Week")) expiry.setDate(expiry.getDate() + 7);
-        else if (plan?.duration.includes("Month")) expiry.setMonth(expiry.getMonth() + 1);
+        const days = (plan as any)?.days || (plan?.duration.includes("Week") ? 7 : 30);
+        expiry.setDate(expiry.getDate() + days);
         
         await updateUser(user.id, { 
           status: "active", 
           subscription: selectedPlan || user.subscription,
-          subscriptionExpiry: expiry.toISOString()
+          subscriptionExpiry: expiry.toISOString().split("T")[0]
         }); 
         toast({ title: "User updated" }); 
       }
@@ -999,7 +1000,7 @@ const UsersSection = ({ users, search }: { users: UserItem[]; search: string }) 
                 <select className="w-full h-9 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={selectedPlan} onChange={e => setSelectedPlan(e.target.value)}>
                   <option value="">-- Select Plan --</option>
                   {adminPlans.filter(p => p.type === "agent" || p.type === "user").map(p => (
-                    <option key={p.id} value={p.name}>{p.name} (Plan: {p.type}) - {p.price.toLocaleString()} UGX / {p.duration}</option>
+                    <option key={p.id} value={p.name}>{p.name} - UGX {p.price.toLocaleString()} / {p.duration}</option>
                   ))}
                 </select>
               </div>
