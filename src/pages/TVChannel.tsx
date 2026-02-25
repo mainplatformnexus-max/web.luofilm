@@ -1,12 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Newspaper } from "lucide-react";
-import { subscribeTVChannels, subscribeLatestUpdates } from "@/lib/firebaseServices";
-import type { TVChannelItem, LatestUpdateItem } from "@/data/adminData";
+import { Newspaper, Lock } from "lucide-react";
+import { subscribeTVChannels, subscribeLatestUpdates, getUserByUid } from "@/lib/firebaseServices";
+import type { TVChannelItem, LatestUpdateItem, UserItem } from "@/data/adminData";
 import shaka from "shaka-player";
 import logo from "@/assets/logo.png";
 import LogoLoader from "@/components/LogoLoader";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import SubscribeModal from "@/components/SubscribeModal";
+
+// ==================== HELPER: Check if user has active subscription ====================
+const checkUserSubscription = (userDoc: UserItem | null): boolean => {
+  if (!userDoc) return false;
+  if (!userDoc.subscription || !userDoc.subscriptionExpiry) return false;
+  const expiry = new Date(userDoc.subscriptionExpiry);
+  return expiry.getTime() > Date.now() && userDoc.status !== "blocked";
+};
 
 interface TVPlayerProps {
   src: string;
@@ -275,12 +285,23 @@ const TVPlayer = ({ src, name, category, onClose }: TVPlayerProps) => {
 
 const TVChannel = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const [channels, setChannels] = useState<TVChannelItem[] | null>(null);
   const [activeChannel, setActiveChannel] = useState<TVChannelItem | null>(null);
   const [latestUpdates, setLatestUpdates] = useState<LatestUpdateItem[]>([]);
+  const [userDoc, setUserDoc] = useState<UserItem | null>(null);
+  const [showSubscribe, setShowSubscribe] = useState(false);
   const autoPlayedRef = useRef(false);
 
   const navState = location.state as { channelId?: string } | null;
+
+  // Check user subscription status
+  useEffect(() => {
+    if (!user) { setUserDoc(null); return; }
+    getUserByUid(user.uid).then(doc => setUserDoc(doc));
+  }, [user]);
+
+  const hasSubscription = checkUserSubscription(userDoc);
 
   useEffect(() => {
     const unsub1 = subscribeTVChannels((chs) => {
@@ -306,18 +327,41 @@ const TVChannel = () => {
     );
   }
 
+  // Require subscription to play & download (Admins bypass)
+  const isAdmin = userDoc?.role === "admin" || user?.email === "mainplatform.nexus@gmail.com";
+  const hasValidSubscription = isAdmin || hasSubscription;
+  const requiresSubscription = !user || !hasValidSubscription;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="h-3" />
 
       {activeChannel && activeChannel.streamLink && (
-        <TVPlayer
-          src={activeChannel.streamLink}
-          name={activeChannel.name}
-          category={activeChannel.category}
-          onClose={() => setActiveChannel(null)}
-        />
+        requiresSubscription ? (
+          <div className="mb-6 md:mx-4 relative aspect-video bg-black rounded-2xl border border-border overflow-hidden">
+             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3 z-10">
+                <Lock className="w-12 h-12 text-primary" />
+                <p className="text-foreground text-sm font-bold">Subscription Required</p>
+                <p className="text-muted-foreground text-xs text-center px-8">
+                  Please subscribe to watch live TV channels.
+                </p>
+                <button onClick={() => setShowSubscribe(true)}
+                  className="bg-primary text-primary-foreground px-6 py-2 rounded-full text-xs font-bold hover:bg-primary/90">
+                  Subscribe Now
+                </button>
+             </div>
+          </div>
+        ) : (
+          <TVPlayer
+            src={activeChannel.streamLink}
+            name={activeChannel.name}
+            category={activeChannel.category}
+            onClose={() => setActiveChannel(null)}
+          />
+        )
       )}
+
+      <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} />
 
       {channels.length > 0 ? (
         <div className="px-4 md:px-8 mb-8 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 gap-2">

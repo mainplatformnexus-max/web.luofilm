@@ -49,11 +49,19 @@ const AgentWatch = () => {
   const streamLink = currentEpisode?.streamLink || state?.streamLink || "";
   const downloadLink = currentEpisode?.downloadLink || currentEpisode?.streamLink || state?.downloadLink || state?.streamLink || "";
 
+  // Admin access bypass
+  const isAdmin = user?.email === "mainplatform.nexus@gmail.com";
+
   useEffect(() => {
-    if (!agentData) return;
-    const unsub = subscribeSharedLinks(agentData.id, setSharedLinks);
-    return unsub;
-  }, [agentData]);
+    if (!agentData && !isAdmin) {
+      navigate("/agent");
+      return;
+    }
+    if (agentData) {
+      const unsub = subscribeSharedLinks(agentData.id, setSharedLinks);
+      return unsub;
+    }
+  }, [agentData, isAdmin]);
 
   // Load episodes if series
   useEffect(() => {
@@ -61,24 +69,23 @@ const AgentWatch = () => {
     if (!seriesId) return;
     const unsub = subscribeEpisodes((allEps) => {
       const filtered = allEps
-        .filter(ep => ep.seriesId === seriesId && ep.isAgent)
+        .filter(ep => ep.seriesId === seriesId && (ep.isAgent || isAdmin))
         .sort((a, b) => (a.episodeNumber || 0) - (b.episodeNumber || 0));
       setEpisodes(filtered);
       if (!currentEpisode && filtered.length > 0) setCurrentEpisode(filtered[0]);
     });
     return unsub;
-  }, [contentId]);
+  }, [contentId, isAdmin]);
 
   // Load related agent movies
   useEffect(() => {
     const unsub = subscribeMovies((movies) => {
-      setRelatedMovies(movies.filter(m => m.isAgent && m.id !== contentId).slice(0, 6));
+      setRelatedMovies(movies.filter(m => (m.isAgent || isAdmin) && m.id !== contentId).slice(0, 6));
     });
     return unsub;
-  }, [contentId]);
+  }, [contentId, isAdmin]);
 
-  if (!agentData) {
-    navigate("/agent");
+  if (!agentData && !isAdmin) {
     return null;
   }
 

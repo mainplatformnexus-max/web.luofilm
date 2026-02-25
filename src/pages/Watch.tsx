@@ -443,7 +443,7 @@ const Watch = () => {
       toast({ title: "Login required", description: "Please login to download", variant: "destructive" });
       return;
     }
-    if (!hasSubscription) {
+    if (!hasValidSubscription) {
       toast({ title: "Subscription required", description: "Subscribe to download content", variant: "destructive" });
       setShowSubscribe(true);
       return;
@@ -482,7 +482,7 @@ const Watch = () => {
   };
 
   // Require subscription to play & download (Admins bypass)
-  const isAdmin = userDoc?.role === "admin";
+  const isAdmin = userDoc?.role === "admin" || user?.email === "mainplatform.nexus@gmail.com";
   const hasValidSubscription = isAdmin || hasSubscription;
   const requiresSubscription = !user || !hasValidSubscription;
 
