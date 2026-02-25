@@ -146,7 +146,7 @@ const AgentWatch = () => {
       const response = await fetch(downloadLink);
       if (!response.ok) throw new Error("fetch_failed");
       const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(new Blob([blob], { type: "video/mp4" }));
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
       a.download = fileName;
@@ -156,13 +156,15 @@ const AgentWatch = () => {
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 5000);
       toast({ title: "Download started!", description: fileName });
     } catch {
-      // Fallback: hidden iframe
+      // Fallback: direct link
       try {
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = downloadLink;
-        document.body.appendChild(iframe);
-        setTimeout(() => document.body.removeChild(iframe), 10000);
+        const a = document.createElement("a");
+        a.href = downloadLink;
+        a.download = fileName;
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         toast({ title: "Download started!", description: fileName });
       } catch {
         toast({ title: "Download failed", description: "The video server may not support direct downloads.", variant: "destructive" });

@@ -143,18 +143,28 @@ const downloadVideoFile = async (
 ) => {
   onStart();
   try {
-    // For cloud-hosted files, often a simple direct link click is most reliable
-    // if CORS is an issue for blob/fetch
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Network response was not ok");
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+    onSuccess(fileName);
+  } catch (err) {
+    // Fallback if fetch/CORS fails
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;
-    link.target = "_blank"; // Open in new tab if browser refuses to download directly
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     onSuccess(fileName);
-  } catch (err) {
-    onError("Download failed. Please try again or use a different browser.");
   }
   onEnd();
 };
