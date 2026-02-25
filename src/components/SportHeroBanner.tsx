@@ -1,4 +1,4 @@
-import { Play, ChevronRight } from "lucide-react";
+import { Play, Plus, ChevronRight } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { subscribeCarousels } from "@/lib/firebaseServices";
@@ -53,12 +53,24 @@ const SportHeroBanner = () => {
           <p className="text-muted-foreground text-xs md:text-sm mb-4 max-w-md">
             Watch live football matches, highlights and more. All in one place.
           </p>
-          <button
-            onClick={() => navigate("/watch/sport-live")}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-semibold text-xs hover:opacity-90 transition-opacity"
-          >
-            <Play className="w-4 h-4 fill-current" /> Open Live Player
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/watch/sport-live")}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-semibold text-xs hover:opacity-90 transition-opacity"
+            >
+              <Play className="w-4 h-4 fill-current" /> Open Live Player
+            </button>
+            <button
+              onClick={() => {
+                // Future functionality: Add to Watch Later or Favorites
+                console.log("Added to Watch Later");
+              }}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-foreground hover:bg-secondary/80 transition-colors border border-border"
+              title="Add to Watch Later"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -87,12 +99,24 @@ const SportHeroBanner = () => {
         )}
         <h2 className="text-foreground text-xl md:text-2xl font-black mb-1">{slide.title}</h2>
         <p className="text-muted-foreground text-[11px] mb-3">{slide.subtitle}</p>
-        <button
-          onClick={() => navigate(`/watch/sport-${slide.linkId}`)}
-          className="flex items-center gap-1.5 bg-primary text-primary-foreground px-5 py-2 rounded-full font-semibold text-xs hover:opacity-90 transition-opacity"
-        >
-          <Play className="w-3.5 h-3.5 fill-current" /> Watch Now
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(`/watch/sport-${slide.linkId}`)}
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground px-5 py-2 rounded-full font-semibold text-xs hover:opacity-90 transition-opacity"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" /> Watch Now
+          </button>
+          <button
+            onClick={() => {
+              // Future functionality: Add to Watch Later or Favorites
+              console.log("Added to Watch Later");
+            }}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-secondary/50 backdrop-blur-sm text-foreground hover:bg-secondary transition-colors border border-white/10"
+            title="Add to Watch Later"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {carousels.length > 1 && (

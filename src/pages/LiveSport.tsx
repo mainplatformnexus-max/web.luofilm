@@ -8,7 +8,9 @@ const LiveSport = () => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    return subscribeCarousels(() => setLoaded(true));
+    return subscribeCarousels((items) => {
+      setLoaded(true);
+    });
   }, []);
 
   if (!loaded) {
