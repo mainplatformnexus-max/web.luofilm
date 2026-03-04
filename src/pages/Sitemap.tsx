@@ -62,14 +62,17 @@ const Sitemap = () => {
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4 border-b border-border pb-2">Main Pages</h2>
-        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <li><a href="/" className="hover:text-primary text-sm">Home</a></li>
-          <li><a href="/series" className="hover:text-primary text-sm">Series</a></li>
-          <li><a href="/movies" className="hover:text-primary text-sm">Movies</a></li>
-          <li><a href="/tv-channels" className="hover:text-primary text-sm">Live TV</a></li>
-          <li><a href="/live-sport" className="hover:text-primary text-sm">Live Sport</a></li>
-          <li><a href="/agent" className="hover:text-primary text-sm">Agent Portal</a></li>
+        <h2 className="text-xl font-semibold mb-4 border-b border-border pb-2">All Pages</h2>
+        <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <li><a href="/" className="hover:text-primary font-medium">Home Page</a></li>
+          <li><a href="/movies" className="hover:text-primary font-medium">Movies Collection</a></li>
+          <li><a href="/series" className="hover:text-primary font-medium">TV Series</a></li>
+          <li><a href="/adult" className="hover:text-primary font-medium">18+ Adult Premium</a></li>
+          <li><a href="/tv-channels" className="hover:text-primary font-medium">Live TV Channels</a></li>
+          <li><a href="/live-sport" className="hover:text-primary font-medium">Live Sports & Football</a></li>
+          <li><a href="/agent" className="hover:text-primary font-medium">Agent 1X Portal</a></li>
+          <li><a href="/how-to-use" className="hover:text-primary font-medium">User Guide</a></li>
+          <li><a href="/sitemap" className="hover:text-primary font-medium">Site Index</a></li>
         </ul>
       </section>
     </div>

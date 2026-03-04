@@ -10,6 +10,7 @@ export async function generateSitemap(baseUrl: string) {
     "",
     "series",
     "movies",
+    "adult",
     "tv-channels",
     "live-sport",
     "agent",
@@ -25,7 +26,7 @@ export async function generateSitemap(baseUrl: string) {
   <url>
     <loc>${baseUrl}/${page}</loc>
     <changefreq>hourly</changefreq>
-    <priority>0.8</priority>
+    <priority>1.0</priority>
   </url>`;
   });
 
@@ -35,7 +36,7 @@ export async function generateSitemap(baseUrl: string) {
   <url>
     <loc>${baseUrl}/series/${s.id}</loc>
     <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <priority>0.9</priority>
   </url>`;
   });
 
@@ -45,7 +46,7 @@ export async function generateSitemap(baseUrl: string) {
   <url>
     <loc>${baseUrl}/watch/${m.id}</loc>
     <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <priority>0.9</priority>
   </url>`;
   });
 

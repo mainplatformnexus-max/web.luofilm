@@ -279,6 +279,7 @@ const SeriesSection = ({ series, search }: { series: SeriesItem[]; search: strin
       <div className="mb-2">
         <p className="text-xs font-medium text-foreground mb-2">Display Sections (check all that apply)</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <CheckboxField label="18+ Adult" checked={!!form.isAdult} onChange={v => setForm({ ...form, isAdult: v })} />
           <CheckboxField label="Popular" checked={!!form.isPopular} onChange={v => setForm({ ...form, isPopular: v })} />
           <CheckboxField label="Coming Soon" checked={!!form.isComingSoon} onChange={v => setForm({ ...form, isComingSoon: v })} />
           <CheckboxField label="Top Ten / Drama Selection" checked={!!form.isTopTen} onChange={v => setForm({ ...form, isTopTen: v })} />
@@ -390,6 +391,7 @@ const MoviesSection = ({ movies, search }: { movies: MovieItem[]; search: string
       <div className="mb-2">
         <p className="text-xs font-medium text-foreground mb-2">Display Sections (check all that apply)</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <CheckboxField label="18+ Adult" checked={!!form.isAdult} onChange={v => setForm({ ...form, isAdult: v })} />
           <CheckboxField label="Popular" checked={!!form.isPopular} onChange={v => setForm({ ...form, isPopular: v })} />
           <CheckboxField label="Coming Soon" checked={!!form.isComingSoon} onChange={v => setForm({ ...form, isComingSoon: v })} />
           <CheckboxField label="Top Ten / Drama Selection" checked={!!form.isTopTen} onChange={v => setForm({ ...form, isTopTen: v })} />

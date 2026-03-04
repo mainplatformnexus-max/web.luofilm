@@ -12,13 +12,15 @@ interface SubscribeModalProps {
 }
 
 const userPlans = [
-  { id: "1day", label: "1 Day", price: "5,000", priceNum: 5000, duration: "24 hours access", days: 1 },
+  { id: "1day", label: "1 Day", price: "2,500", priceNum: 2500, duration: "24 hours access", days: 1 },
+  { id: "3days", label: "3 Days", price: "5,000", priceNum: 5000, duration: "3 days access", days: 3 },
   { id: "1week", label: "1 Week", price: "10,000", priceNum: 10000, duration: "7 days access", days: 7 },
   { id: "1month", label: "1 Month", price: "25,000", priceNum: 25000, duration: "30 days access", days: 30 },
 ];
 
 const agentPlans = [
-  { id: "agent-1week", label: "1 Week", price: "25,000", priceNum: 25000, duration: "7 days Agent access", days: 7 },
+  { id: "agent-1day", label: "1 Day", price: "5,000", priceNum: 5000, duration: "24 hours Agent access", days: 1 },
+  { id: "agent-1week", label: "1 Week", price: "20,000", priceNum: 20000, duration: "7 days Agent access", days: 7 },
   { id: "agent-1month", label: "1 Month", price: "50,000", priceNum: 50000, duration: "30 days Agent access", days: 30 },
 ];
 

@@ -53,6 +53,14 @@ const Index = () => {
     const unsub2 = subscribeSeries((series) =>
       setFbSeries(series.map((s, i) => ({ ...s, _idx: i + 1000 })))
     );
+
+    // Add SEO meta tags dynamically
+    document.title = "LUO FILM - Watch Movies, Series & Live Sports Online";
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute("content", "LUO FILM is the #1 platform for streaming the latest movies, drama series, live football, and TV channels. Join our Agent program to earn.");
+    }
+
     return () => { unsub1(); unsub2(); };
   }, []);
 

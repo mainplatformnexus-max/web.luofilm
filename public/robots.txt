@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
-Sitemap: /sitemap.xml
+Sitemap: https://luofilm.com/sitemap.xml

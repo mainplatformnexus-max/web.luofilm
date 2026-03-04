@@ -43,7 +43,7 @@ const Agent = () => {
   const [withdrawProvider, setWithdrawProvider] = useState("MTN Mobile Money");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showRenewModal, setShowRenewModal] = useState(false);
-  const [renewPlan, setRenewPlan] = useState<"week" | "month">("week");
+  const [renewPlan, setRenewPlan] = useState<"day" | "week" | "month">("week");
   const [renewNumber, setRenewNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -253,7 +253,7 @@ const Agent = () => {
     }
   };
 
-  const renewPrice = renewPlan === "week" ? 20000 : 30000;
+  const renewPrice = renewPlan === "week" ? 20000 : 50000;
 
   return (
     <div className="min-h-screen bg-background px-4 md:px-8 py-6">
@@ -439,13 +439,13 @@ const Agent = () => {
           <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <h3 className="text-sm font-bold text-foreground mb-4">Renew Subscription</h3>
             <div className="flex gap-2 mb-4">
-              {(["week", "month"] as const).map(p => (
-                <button key={p} onClick={() => setRenewPlan(p)}
-                  className={`flex-1 py-3 rounded-xl border-2 text-xs font-medium transition-all ${renewPlan === p ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
-                  1 {p === "week" ? "Week" : "Month"}<br />
-                  <span className="text-sm font-bold">{p === "week" ? "20,000" : "30,000"} UGX</span>
-                </button>
-              ))}
+              {(["day", "week", "month"] as const).map(p => (
+              <button key={p} onClick={() => setRenewPlan(p as any)}
+                className={`flex-1 py-3 rounded-xl border-2 text-xs font-medium transition-all ${renewPlan === p ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
+                1 {p === "day" ? "Day" : p === "week" ? "Week" : "Month"}<br />
+                <span className="text-sm font-bold">{p === "day" ? "5,000" : p === "week" ? "20,000" : "50,000"} UGX</span>
+              </button>
+            ))}
             </div>
             <div className="mb-4">
               <label className="text-muted-foreground text-[10px] block mb-1">Mobile Money Number</label>

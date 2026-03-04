@@ -14,6 +14,7 @@ import Movies from "./pages/Movies";
 import Series from "./pages/Series";
 import TVChannel from "./pages/TVChannel";
 import LiveSport from "./pages/LiveSport";
+import Adult from "./pages/Adult";
 import Agent from "./pages/Agent";
 import AgentWatch from "./pages/AgentWatch";
 import AudiencePage from "./pages/AudiencePage";
@@ -42,6 +43,7 @@ const AppLayout = () => {
         <Route path="/series" element={<Series />} />
         <Route path="/tv-channel" element={<TVChannel />} />
         <Route path="/live-sport" element={<LiveSport />} />
+        <Route path="/adult" element={<Adult />} />
         <Route path="/agent" element={<Agent />} />
         <Route path="/agent-watch/:id" element={<AgentWatch />} />
         <Route path="/a/:shareCode" element={<AudiencePage />} />

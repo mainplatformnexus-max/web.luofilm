@@ -15,6 +15,7 @@ const navLinks = [
   { label: "Home", path: "/", icon: Home },
   { label: "Movies", path: "/movies", icon: Film },
   { label: "Series", path: "/series", icon: Tv },
+  { label: "18+", path: "/adult", icon: ShieldCheck },
   { label: "TV Channel", path: "/tv-channel", icon: Radio },
   { label: "Live Sport", path: "/live-sport", icon: Trophy },
   { label: "Subscribe", path: "#subscribe", icon: Crown },

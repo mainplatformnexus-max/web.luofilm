@@ -15,6 +15,7 @@ export interface SeriesItem {
   isHotDrama: boolean;
   isOriginal: boolean;
   isVip: boolean;
+  isAdult: boolean;
   rating: number;
   totalEpisodes: number;
   displayOrder: number;
@@ -38,6 +39,7 @@ export interface MovieItem {
   isOriginal: boolean;
   isVip: boolean;
   isAgent: boolean;
+  isAdult: boolean;
   agentMarkedAt: string | null;
   rating: number;
   displayOrder: number;
@@ -226,9 +228,11 @@ export const mockTransactions: WalletTransaction[] = [
 ];
 
 export const adminPlans = [
-  { id: "1day", name: "1 Day", price: 5000, duration: "24 hours access", type: "user", days: 1 },
+  { id: "1day", name: "1 Day", price: 2500, duration: "24 hours access", type: "user", days: 1 },
+  { id: "3days", name: "3 Days", price: 5000, duration: "3 days access", type: "user", days: 3 },
   { id: "1week", name: "1 Week", price: 10000, duration: "7 days access", type: "user", days: 7 },
   { id: "1month", name: "1 Month", price: 25000, duration: "30 days access", type: "user", days: 30 },
-  { id: "agent-1week", name: "Agent 1 Week", price: 25000, duration: "7 days Agent access", type: "agent", days: 7 },
+  { id: "agent-1day", name: "Agent 1 Day", price: 5000, duration: "24 hours Agent access", type: "agent", days: 1 },
+  { id: "agent-1week", name: "Agent 1 Week", price: 20000, duration: "7 days Agent access", type: "agent", days: 7 },
   { id: "agent-1month", name: "Agent 1 Month", price: 50000, duration: "30 days Agent access", type: "agent", days: 30 },
 ];
