@@ -15,7 +15,7 @@ const navLinks = [
   { label: "Home", path: "/", icon: Home },
   { label: "Movies", path: "/movies", icon: Film },
   { label: "Series", path: "/series", icon: Tv },
-  { label: "18+", path: "/adult", icon: ShieldCheck },
+  { label: "18+", path: "/adult", icon: ShieldCheck, badge: "New" },
   { label: "TV Channel", path: "/tv-channel", icon: Radio },
   { label: "Live Sport", path: "/live-sport", icon: Trophy },
   { label: "Subscribe", path: "#subscribe", icon: Crown },
@@ -70,13 +70,18 @@ const Header = () => {
               const Icon = link.icon;
               return (
                 <button key={link.label} onClick={() => handleNavClick(link.path)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all relative ${
                     isActive(link.path) ? "bg-primary text-primary-foreground shadow-sm"
                     : link.path === "#subscribe" || link.path === "#agent" ? "text-accent bg-accent/10 hover:bg-accent/20"
                     : "text-muted-foreground hover:text-foreground hover:bg-background"
                   }`}>
                   <Icon className="w-3.5 h-3.5" />
                   {link.label}
+                  {link.badge && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-6 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground animate-pulse">
+                      {link.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

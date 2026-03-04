@@ -1,18 +1,40 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { getMovies, getSeries } from "@/lib/firebaseServices";
-import DramaCard from "@/components/DramaCard";
+import { useState, useEffect, useMemo } from "react";
+import { ShieldAlert, TrendingUp, Clock, Flame, Heart, Sparkles, Crown, ListOrdered, Star } from "lucide-react";
+import ContentRow from "@/components/ContentRow";
+import GenreTags from "@/components/GenreTags";
+import HeroBanner from "@/components/HeroBanner";
+import LogoLoader from "@/components/LogoLoader";
+import { subscribeMovies, subscribeSeries } from "@/lib/firebaseServices";
+import type { MovieItem, SeriesItem } from "@/data/adminData";
+import type { Drama } from "@/data/dramas";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { Lock, Upload, ShieldAlert } from "lucide-react";
 
-const AdultPage = () => {
-  const { user, userDoc } = useAuth();
+const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
+  id: i + 8000,
+  title: item.name,
+  image: item.posterUrl || "/placeholder.svg",
+  episodes: "totalEpisodes" in item ? `${item.totalEpisodes} Episodes` : undefined,
+  badge: item.isComingSoon ? "Coming soon" : undefined,
+  rank: item.isTopTen ? i + 1 : undefined,
+  firebaseId: item.id,
+  genre: item.genre,
+  rating: item.rating,
+  description: item.description,
+  actors: item.actors,
+  isVip: item.isVip,
+  isHotDrama: item.isHotDrama,
+  isOriginal: item.isOriginal,
+  categories: item.categories,
+  displayOrder: item.displayOrder || 0,
+});
+
+const Adult = () => {
+  const [movies, setMovies] = useState<MovieItem[] | null>(null);
+  const [series, setSeries] = useState<SeriesItem[] | null>(null);
+  const [activeGenre, setActiveGenre] = useState("All Videos");
   const [isGated, setIsGated] = useState(true);
   const [answer, setAnswer] = useState("");
   const [question, setQuestion] = useState({ q: "", a: "" });
-  const [content, setContent] = useState<any[]>([]);
-  const navigate = useNavigate();
 
   const questions = [
     { q: "What is 15 + 7?", a: "22" },
@@ -22,24 +44,31 @@ const AdultPage = () => {
   ];
 
   useEffect(() => {
-    const randomQ = questions[Math.floor(Math.random() * questions.length)];
-    setQuestion(randomQ);
-
-    const loadContent = async () => {
-      const [movies, series] = await Promise.all([getMovies(), getSeries()]);
-      const adultContent = [
-        ...movies.filter(m => m.genre?.toLowerCase().includes("18+") || (m as any).isAdult),
-        ...series.filter(s => s.genre?.toLowerCase().includes("18+") || (s as any).isAdult)
-      ];
-      setContent(adultContent);
-    };
-    loadContent();
+    setQuestion(questions[Math.floor(Math.random() * questions.length)]);
+    const unsub1 = subscribeMovies(setMovies);
+    const unsub2 = subscribeSeries(setSeries);
+    return () => { unsub1(); unsub2(); };
   }, []);
+
+  const allAdultContent = useMemo(() => {
+    if (!movies || !series) return [];
+    const filteredMovies = movies.filter(m => m.genre?.toLowerCase().includes("18+") || m.isAdult);
+    const filteredSeries = series.filter(s => s.genre?.toLowerCase().includes("18+") || s.isAdult);
+    
+    return [
+      ...filteredMovies.map((m, i) => toDrama(m, i)),
+      ...filteredSeries.map((s, i) => toDrama(s, i + 1000))
+    ].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  }, [movies, series]);
+
+  const dramas = useMemo(() => {
+    if (activeGenre === "All Videos") return allAdultContent;
+    return allAdultContent.filter(d => d.genre?.toLowerCase().includes(activeGenre.toLowerCase()));
+  }, [allAdultContent, activeGenre]);
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedAnswer = answer.toLowerCase().trim();
-    if (normalizedAnswer === question.a.toLowerCase()) {
+    if (answer.toLowerCase().trim() === question.a.toLowerCase()) {
       setIsGated(false);
     } else {
       alert("Incorrect answer. This section is for adults only.");
@@ -49,75 +78,70 @@ const AdultPage = () => {
   if (isGated) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-card border border-border p-8 rounded-2xl text-center space-y-6">
+        <div className="max-w-md w-full bg-card border border-border p-8 rounded-2xl text-center space-y-6 shadow-2xl">
           <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto text-destructive">
             <ShieldAlert className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-bold">Adult Content Access</h1>
-          <p className="text-muted-foreground">To prove you are an adult, please answer the following question:</p>
+          <p className="text-muted-foreground text-sm">To prove you are an adult, please answer the following question:</p>
           <form onSubmit={handleVerify} className="space-y-4">
             <div className="text-left">
-              <label className="text-sm font-medium mb-1 block">{question.q}</label>
+              <label className="text-xs font-semibold mb-1.5 block text-muted-foreground">{question.q}</label>
               <input 
                 type="text" 
                 value={answer} 
                 onChange={(e) => setAnswer(e.target.value)}
-                className="w-full bg-secondary border border-border rounded-lg px-4 py-2 focus:outline-none"
+                className="w-full bg-secondary border border-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 placeholder="Your answer..."
                 required
               />
             </div>
-            <Button type="submit" className="w-full">Verify & Enter</Button>
+            <Button type="submit" className="w-full h-11 font-bold">Verify & Enter</Button>
           </form>
         </div>
       </div>
     );
   }
 
-  const hasSubscription = userDoc?.subscription && userDoc?.status === 'active';
+  if (movies === null || series === null) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LogoLoader text="Loading 18+ content..." />
+      </div>
+    );
+  }
+
+  const popular = dramas.filter(d => {
+    const item = movies.find(m => m.id === d.firebaseId) || series.find(s => s.id === d.firebaseId);
+    return item?.isPopular;
+  });
+  const topTen = dramas.filter(d => d.rank != null).map((d, i) => ({ ...d, rank: i + 1 }));
+  const hotDrama = dramas.filter(d => {
+    const item = movies.find(m => m.id === d.firebaseId) || series.find(s => s.id === d.firebaseId);
+    return item?.isHotDrama;
+  });
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">18+ Content</h1>
-            <p className="text-muted-foreground mt-1">Premium adult movies and series</p>
-          </div>
-          <div className="flex gap-3">
-            <Button onClick={() => navigate("/admin")} variant="outline" className="gap-2">
-              <Upload className="w-4 h-4" /> Upload 18+
-            </Button>
-            {!hasSubscription && (
-              <Button onClick={() => window.dispatchEvent(new CustomEvent('open-subscribe-modal'))} className="gap-2">
-                <Lock className="w-4 h-4" /> Subscribe to Watch
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {content.length === 0 ? (
-          <div className="text-center py-20 bg-card border border-border rounded-2xl">
-            <p className="text-muted-foreground">No adult content found. Use the Admin panel to upload content with '18+' in the genre.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {content.map((item) => (
-              <DramaCard 
-                key={item.id} 
-                id={item.id} 
-                title={item.name} 
-                image={item.posterUrl} 
-                rating={item.rating} 
-                year={item.year}
-                isVip={true}
-              />
-            ))}
-          </div>
-        )}
+    <div className="min-h-screen bg-background">
+      <HeroBanner page="movies" compact />
+      <GenreTags activeGenre={activeGenre} onGenreChange={setActiveGenre} />
+      
+      <div className="space-y-2">
+        {dramas.length > 0 && <ContentRow title="18+ Premium Content" dramas={dramas} icon={Star} />}
+        {popular.length > 0 && <ContentRow title="Trending Adult" dramas={popular} icon={TrendingUp} />}
+        {topTen.length > 0 && <ContentRow title="Top Rated 18+" dramas={topTen} icon={Star} showRank />}
+        {hotDrama.length > 0 && <ContentRow title="Hot Selection" dramas={hotDrama} icon={Flame} />}
       </div>
+
+      {dramas.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+          <ShieldAlert className="w-10 h-10 mb-4" />
+          <p className="text-sm font-medium">{activeGenre === "All Videos" ? "No adult content uploaded yet" : `No content found for "${activeGenre}"`}</p>
+          <p className="text-xs mt-1">Admin can upload 18+ content from the dashboard</p>
+        </div>
+      )}
     </div>
   );
 };
 
-export default AdultPage;
+export default Adult;

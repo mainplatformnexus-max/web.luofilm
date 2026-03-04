@@ -9,7 +9,7 @@ const navItems = [
   { label: "Movies", path: "/movies", icon: Film },
   { label: "Series", path: "/series", icon: Tv },
   { label: "Agent", path: "#agent", icon: ShieldCheck, isCenter: true },
-  { label: "Live TV", path: "/tv-channel", icon: Radio },
+  { label: "18+", path: "/adult", icon: ShieldCheck, badge: "New" },
   { label: "Sport", path: "/live-sport", icon: Trophy },
 ];
 
@@ -73,12 +73,17 @@ const BottomNav = () => {
                 <button
                   key={item.label}
                   onClick={() => handleClick(item.path)}
-                  className="flex flex-col items-center py-2.5 px-3 min-w-[56px] transition-colors"
+                  className="flex flex-col items-center py-2.5 px-3 min-w-[56px] transition-colors relative"
                 >
                   <div className={`relative p-1.5 rounded-xl transition-colors ${active ? "bg-primary/15" : ""}`}>
                     <Icon className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-muted-foreground"}`} />
                     {active && (
                       <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                    )}
+                    {item.badge && (
+                      <span className="absolute -top-1 -right-1 flex h-2.5 w-5 items-center justify-center rounded-full bg-destructive text-[6px] font-bold text-destructive-foreground animate-pulse">
+                        {item.badge}
+                      </span>
                     )}
                   </div>
                   <span className={`text-[9px] font-medium mt-0.5 ${active ? "text-primary" : "text-muted-foreground"}`}>
