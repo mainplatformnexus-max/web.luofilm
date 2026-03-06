@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Drama } from "@/data/dramas";
 import SubscribeModal from "@/components/SubscribeModal";
+import { formatDistanceToNow, parseISO, differenceInDays } from "date-fns";
 
 interface DramaCardProps {
   drama: Drama;
@@ -20,6 +21,26 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
     if (!markedAt) return false;
     return Math.floor((Date.now() - markedAt.getTime()) / (1000 * 60 * 60 * 24)) < 5;
   })();
+
+  const getUploadBadge = () => {
+    if (!drama.createdAt) return null;
+    try {
+      const date = parseISO(drama.createdAt);
+      const days = differenceInDays(new Date(), date);
+      if (days > 7) return null;
+      
+      let label = "";
+      if (days === 0) label = "Today";
+      else if (days === 1) label = "Yesterday";
+      else label = `${days} days ago`;
+      
+      return label;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const uploadBadge = getUploadBadge();
 
   const handleClick = () => {
     if (isStillAgent) {
@@ -99,6 +120,11 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
             {!isStillAgent && drama.badge && (
               <div className="absolute top-1.5 right-1.5 bg-badge-coming text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded">
                 {drama.badge}
+              </div>
+            )}
+            {uploadBadge && !isStillAgent && !drama.badge && (
+              <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg animate-pulse">
+                {uploadBadge}
               </div>
             )}
             {drama.episodes && (

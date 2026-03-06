@@ -28,6 +28,7 @@ const toDrama = (m: MovieItem, i: number): Drama => ({
   agentMarkedAt: m.agentMarkedAt,
   categories: m.categories,
   displayOrder: m.displayOrder || 0,
+  createdAt: m.createdAt,
 });
 
 const isStillAgent = (d: Drama) => {
@@ -53,7 +54,12 @@ const Movies = () => {
   const allDramas = useMemo(() => {
     if (!movies) return [];
     return movies
-      .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (dateB !== dateA) return dateB - dateA;
+        return (a.displayOrder || 0) - (b.displayOrder || 0);
+      })
       .map((m, i) => toDrama(m, i)).map(d => {
         if (isStillAgent(d)) {
           const markedAt = new Date(d.agentMarkedAt!);

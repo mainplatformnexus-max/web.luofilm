@@ -25,6 +25,7 @@ const toDrama = (s: SeriesItem, i: number): Drama => ({
   isOriginal: s.isOriginal,
   categories: s.categories,
   displayOrder: s.displayOrder || 0,
+  createdAt: s.createdAt,
 });
 
 const genreMatch = (genre: string | undefined, filter: string) => {
@@ -43,7 +44,12 @@ const Series = () => {
   const allDramas = useMemo(() => {
     if (!seriesList) return [];
     return seriesList
-      .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (dateB !== dateA) return dateB - dateA;
+        return (a.displayOrder || 0) - (b.displayOrder || 0);
+      })
       .map((s, i) => toDrama(s, i));
   }, [seriesList]);
 

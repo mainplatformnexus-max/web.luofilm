@@ -143,8 +143,9 @@ const downloadVideoFile = async (
 ) => {
   onStart();
   try {
+    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
     const link = document.createElement("a");
-    link.href = url;
+    link.href = backendUrl;
     link.download = fileName;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
@@ -447,17 +448,17 @@ const Watch = () => {
       setShowSubscribe(true);
       return;
     }
-    const downloadUrl = currentEpisode?.downloadLink || currentEpisode?.streamLink || (drama as any).downloadLink || drama.streamLink;
-    if (!downloadUrl) {
-      toast({ title: "No download available", variant: "destructive" });
-      return;
-    }
-    
     // Ensure filename reflects the actual content
     const baseName = drama.title.replace(/[/\\?%*:|"<>]/g, '-');
     const fileName = currentEpisode
       ? `${baseName}_E${currentEpisode.episodeNumber}.mp4`
       : `${baseName}.mp4`;
+    
+    const downloadUrl = currentEpisode?.downloadLink || currentEpisode?.streamLink || (drama as any).downloadLink || drama.streamLink;
+    if (!downloadUrl) {
+      toast({ title: "No download available", variant: "destructive" });
+      return;
+    }
     
     downloadVideoFile(
       downloadUrl,
@@ -513,16 +514,11 @@ const Watch = () => {
                 </div>
               </div>
             ) : (currentEpisode?.streamLink || drama.streamLink) ? (
-              <MuxPlayer
+              <ArtPlayerComponent
                 key={currentEpisode?.streamLink || drama.streamLink || ""}
-                src={currentEpisode?.streamLink || drama.streamLink || ""}
+                url={currentEpisode?.streamLink || drama.streamLink || ""}
                 poster={drama.image}
-                autoPlay
-                metadata={{
-                  video_id: (currentEpisode as any)?.id || drama.firebaseId || id,
-                  video_title: currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title,
-                }}
-                className="w-full h-full"
+                title={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
               />
             ) : (
               <>

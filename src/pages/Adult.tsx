@@ -1,3 +1,4 @@
+import ArtPlayerComponent from "@/components/ArtPlayerComponent";
 import { useState, useEffect, useMemo } from "react";
 import { ShieldAlert, TrendingUp, Clock, Flame, Heart, Sparkles, Crown, ListOrdered, Star } from "lucide-react";
 import ContentRow from "@/components/ContentRow";
@@ -17,6 +18,8 @@ const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
   badge: item.isComingSoon ? "Coming soon" : undefined,
   rank: item.isTopTen ? i + 1 : undefined,
   firebaseId: item.id,
+  streamLink: "streamLink" in item ? item.streamLink : undefined,
+  downloadLink: "downloadLink" in item ? item.downloadLink : undefined,
   genre: item.genre,
   rating: item.rating,
   description: item.description,
@@ -26,6 +29,7 @@ const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
   isOriginal: item.isOriginal,
   categories: item.categories,
   displayOrder: item.displayOrder || 0,
+  createdAt: item.createdAt,
 });
 
 const Adult = () => {
@@ -35,6 +39,7 @@ const Adult = () => {
   const [isGated, setIsGated] = useState(true);
   const [answer, setAnswer] = useState("");
   const [question, setQuestion] = useState({ q: "", a: "" });
+  const [selectedDrama, setSelectedDrama] = useState<Drama | null>(null);
 
   const questions = [
     { q: "What is 15 + 7?", a: "22" },
@@ -58,7 +63,12 @@ const Adult = () => {
     return [
       ...filteredMovies.map((m, i) => toDrama(m, i)),
       ...filteredSeries.map((s, i) => toDrama(s, i + 1000))
-    ].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    ].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (dateB !== dateA) return dateB - dateA;
+      return (a.displayOrder || 0) - (b.displayOrder || 0);
+    });
   }, [movies, series]);
 
   const dramas = useMemo(() => {
@@ -122,8 +132,27 @@ const Adult = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
-      <HeroBanner page="movies" compact />
+    <div className="min-h-screen bg-background pb-20">
+      {selectedDrama ? (
+        <div className="relative w-full aspect-video bg-black">
+          <ArtPlayerComponent 
+            url={selectedDrama.streamLink || ""} 
+            poster={selectedDrama.image}
+            title={selectedDrama.title}
+          />
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute top-4 left-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full"
+            onClick={() => setSelectedDrama(null)}
+          >
+            Close Player
+          </Button>
+        </div>
+      ) : (
+        <HeroBanner page="movies" compact />
+      )}
+      
       <GenreTags activeGenre={activeGenre} onGenreChange={setActiveGenre} />
       
       <div className="space-y-2">

@@ -40,6 +40,8 @@ const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
   isAgent: "isAgent" in item ? item.isAgent : false,
   agentMarkedAt: "agentMarkedAt" in item ? item.agentMarkedAt : null,
   categories: item.categories,
+  displayOrder: item.displayOrder,
+  createdAt: item.createdAt,
 });
 
 const Index = () => {
@@ -85,7 +87,12 @@ const Index = () => {
   const all = [
     ...fbMovies.map(m => toDrama(m, m._idx)),
     ...fbSeries.map(s => toDrama(s, s._idx)),
-  ];
+  ].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (dateB !== dateA) return dateB - dateA;
+    return (a.displayOrder || 0) - (b.displayOrder || 0);
+  });
 
   const displayAll = all.map(d => {
     if (isStillAgent(d)) {
