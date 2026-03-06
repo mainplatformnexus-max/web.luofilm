@@ -98,7 +98,7 @@ const ContentRow = ({ title, dramas, showRank, titleColor, icon: Icon, isGrid }:
         )}
 
         {isGrid && (
-          <div className="grid grid-cols-3 md:flex md:flex-nowrap md:overflow-x-auto gap-2.5 scrollbar-hide">
+          <div className="grid grid-cols-3 gap-2.5">
             {dramas.map((drama) => (
               <DramaCard key={drama.id} drama={drama} showRank={showRank} />
             ))}

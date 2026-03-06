@@ -148,19 +148,19 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <HeroBanner />
       <div className="mt-6">
-        {onlyMovies.length > 0 && <ContentRow title="Movies" dramas={onlyMovies} icon={Film} />}
-        {onlySeries.length > 0 && <ContentRow title="Series" dramas={onlySeries} icon={Tv} />}
-        {popular.length > 0 && <ContentRow title="Popular on LUO FILM" dramas={popular} icon={TrendingUp} />}
-        {comingSoon.length > 0 && <ContentRow title="Coming Soon & Upcoming" dramas={comingSoon} icon={Clock} />}
+        {onlyMovies.length > 0 && <ContentRow title="Movies" dramas={onlyMovies} icon={Film} isGrid />}
+        {onlySeries.length > 0 && <ContentRow title="Series" dramas={onlySeries} icon={Tv} isGrid />}
+        {popular.length > 0 && <ContentRow title="Popular on LUO FILM" dramas={popular} icon={TrendingUp} isGrid />}
+        {comingSoon.length > 0 && <ContentRow title="Coming Soon & Upcoming" dramas={comingSoon} icon={Clock} isGrid />}
         
         <GenreTags />
-        {topTen.length > 0 && <ContentRow title="Drama Selection" dramas={topTen} icon={ListOrdered} showRank />}
-        {dramaSelection.length > 0 && <ContentRow title="Editor's Selection" dramas={dramaSelection} icon={Star} showRank />}
-        {highQuality.length > 0 && <ContentRow title="High-quality Dramas" dramas={highQuality} icon={Crown} />}
-        {hotDrama.length > 0 && <ContentRow title="Hot Dramas" dramas={hotDrama} icon={Flame} />}
-        {sweetRomance.length > 0 && <ContentRow title="Sweet Romance" dramas={sweetRomance} titleColor="hsl(30, 100%, 50%)" icon={Heart} />}
+        {topTen.length > 0 && <ContentRow title="Drama Selection" dramas={topTen} icon={ListOrdered} showRank isGrid />}
+        {dramaSelection.length > 0 && <ContentRow title="Editor's Selection" dramas={dramaSelection} icon={Star} showRank isGrid />}
+        {highQuality.length > 0 && <ContentRow title="High-quality Dramas" dramas={highQuality} icon={Crown} isGrid />}
+        {hotDrama.length > 0 && <ContentRow title="Hot Dramas" dramas={hotDrama} icon={Flame} isGrid />}
+        {sweetRomance.length > 0 && <ContentRow title="Sweet Romance" dramas={sweetRomance} titleColor="hsl(30, 100%, 50%)" icon={Heart} isGrid />}
         
-        {ancientCostume.length > 0 && <ContentRow title="Ancient Costume" dramas={ancientCostume} titleColor="hsl(30, 100%, 50%)" icon={Sparkles} />}
+        {ancientCostume.length > 0 && <ContentRow title="Ancient Costume" dramas={ancientCostume} titleColor="hsl(30, 100%, 50%)" icon={Sparkles} isGrid />}
         {displayAll.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
             <Film className="w-10 h-10 mb-4" />

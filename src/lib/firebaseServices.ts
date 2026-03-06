@@ -213,12 +213,18 @@ export const subscribeSharedLinks = (agentDocId: string, callback: (items: Share
 };
 
 // ==================== GENERATE AGENT ID ====================
-export const generateAgentId = (): string => {
+export const generateAgentId = (plan?: string): string => {
   const digits = "0123456789";
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const mid = Array.from({ length: 5 }, () => digits[Math.floor(Math.random() * digits.length)]).join("");
   const end = letters[Math.floor(Math.random() * letters.length)];
-  return `AGNT${mid}${end}`;
+  
+  let prefix = "AGNT";
+  if (plan === "Monthly") prefix = "MAGT";
+  else if (plan === "Weekly") prefix = "WAGT";
+  else if (plan === "Daily") prefix = "DAGT";
+  
+  return `${prefix}${mid}${end}`;
 };
 
 // ==================== LATEST UPDATES ====================

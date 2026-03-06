@@ -222,7 +222,7 @@ const AdminDashboard = () => {
         {section === "carousel" && <CarouselSection carousels={carousels} series={series} movies={movies} episodes={episodes} tvChannels={tvChannels} latestUpdates={latestUpdates} search={search} />}
         {section === "tv-channels" && <TVChannelSection channels={tvChannels} search={search} />}
         {section === "latest-updates" && <LatestUpdatesSection updates={latestUpdates} search={search} />}
-        {section === "activity" && <ActivitySection activities={activities} search={search} />}
+        {section === "activity" && <ActivitySection activities={activities.filter(a => a.userName !== "Admin" && a.userName !== ADMIN_EMAIL)} search={search} />}
         {section === "agents" && <AgentSection agents={agents} search={search} />}
         {section === "users" && <UsersSection users={users} search={search} />}
         {section === "wallet" && <WalletSection transactions={transactions} search={search} />}
@@ -797,75 +797,130 @@ const ActivitySection = ({ activities, search }: { activities: UserActivity[]; s
 // ==================== AGENT SECTION ====================
 const AgentSection = ({ agents, search }: { agents: AgentItem[]; search: string }) => {
   const filtered = agents.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || a.agentId.toLowerCase().includes(search.toLowerCase()));
-  const [actionModal, setActionModal] = useState<{ type: string; agent: AgentItem } | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState("");
   const { toast } = useToast();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [form, setForm] = useState<Partial<AgentItem>>({ plan: "Weekly" });
+  
+  const [actionModal, setActionModal] = useState<{ type: "activate" | "deactivate" | "block" | "upgrade" | "delete"; agent: AgentItem } | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState("");
 
-  const handleAction = (type: string, agent: AgentItem) => setActionModal({ type, agent });
+  const handleAddAgent = async () => {
+    if (!form.name || !form.phone || !form.plan) {
+      toast({ title: "Please fill all fields", variant: "destructive" });
+      return;
+    }
+    try {
+      const agentId = generateAgentId(form.plan);
+      const expiry = new Date();
+      if (form.plan === "Monthly") expiry.setMonth(expiry.getMonth() + 1);
+      else if (form.plan === "Weekly") expiry.setDate(expiry.getDate() + 7);
+      else expiry.setDate(expiry.getDate() + 1);
+
+      await addAgent({
+        ...form,
+        agentId,
+        status: "active",
+        balance: 0,
+        planExpiry: expiry.toISOString().split("T")[0],
+        createdAt: new Date().toISOString().split("T")[0],
+        sharedMovies: 0,
+        sharedSeries: 0,
+        totalEarnings: 0
+      } as any);
+
+      toast({ title: "Agent created", description: `Agent ID: ${agentId}` });
+      setShowAddForm(false);
+      setForm({ plan: "Weekly" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const confirmAction = async () => {
     if (!actionModal) return;
     const { type, agent } = actionModal;
     try {
-      if (type === "block") { await updateAgent(agent.id, { status: "blocked" }); toast({ title: "Agent blocked" }); }
-      else if (type === "activate") { 
+      if (type === "delete") {
+        await deleteAgent(agent.id);
+        toast({ title: "Agent deleted" });
+      } else if (type === "activate" || type === "upgrade") {
+        if (!selectedPlan) { toast({ title: "Select a plan", variant: "destructive" }); return; }
         const plan = adminPlans.find(p => p.name === selectedPlan);
-        const now = new Date();
-        const expiry = new Date(now);
-        const days = (plan as any)?.days || (plan?.duration.includes("Week") ? 7 : 30);
-        expiry.setDate(expiry.getDate() + days);
+        const expiry = new Date();
+        if (plan?.duration.includes("Month")) expiry.setMonth(expiry.getMonth() + 1);
+        else expiry.setDate(expiry.getDate() + 7);
 
-        await updateAgent(agent.id, { 
-          status: "active", 
-          plan: selectedPlan || agent.plan,
-          planExpiry: expiry.toISOString().split("T")[0]
-        }); 
-        toast({ title: "Agent activated" }); 
+        await updateAgent(agent.id, { status: "active", plan: selectedPlan, planExpiry: expiry.toISOString().split("T")[0] });
+        toast({ title: `Agent ${type === "activate" ? "activated" : "upgraded"}` });
+      } else {
+        await updateAgent(agent.id, { status: type === "block" ? "blocked" : "expired" });
+        toast({ title: `Agent ${type === "block" ? "blocked" : "deactivated"}` });
       }
-      else if (type === "remove") { await deleteAgent(agent.id); toast({ title: "Agent removed" }); }
-    } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
-    setActionModal(null);
-    setSelectedPlan("");
+      setActionModal(null);
+      setSelectedPlan("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
+
+  if (showAddForm) return (
+    <ContentForm title="Add New Agent" onClose={() => setShowAddForm(false)} onSave={handleAddAgent}>
+      <FormField label="Full Name" value={form.name || ""} onChange={v => setForm({ ...form, name: v })} />
+      <FormField label="Phone Number" value={form.phone || ""} onChange={v => setForm({ ...form, phone: v })} />
+      <div>
+        <label className="text-xs font-medium text-muted-foreground mb-1 block">Initial Plan</label>
+        <select className="w-full h-9 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })}>
+          <option value="Daily">Daily</option>
+          <option value="Weekly">Weekly</option>
+          <option value="Monthly">Monthly</option>
+        </select>
+      </div>
+    </ContentForm>
+  );
 
   return (
     <div>
+      <div className="flex justify-between items-center mb-4">
+        <p className="text-xs text-muted-foreground">{filtered.length} agents</p>
+        <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => setShowAddForm(true)}><Plus className="w-3.5 h-3.5" /> Add Agent</Button>
+      </div>
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full text-xs">
           <thead><tr className="border-b border-border bg-secondary/50">
-            <th className="text-left p-3 text-muted-foreground font-medium">Name</th>
+            <th className="text-left p-3 text-muted-foreground font-medium">Agent</th>
             <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Phone</th>
-            <th className="text-left p-3 text-muted-foreground font-medium hidden lg:table-cell">Agent ID</th>
+            <th className="text-center p-3 text-muted-foreground font-medium">Plan</th>
             <th className="text-center p-3 text-muted-foreground font-medium">Balance</th>
-            <th className="text-center p-3 text-muted-foreground font-medium hidden sm:table-cell">Shares</th>
-            <th className="text-center p-3 text-muted-foreground font-medium hidden lg:table-cell">Earnings</th>
             <th className="text-center p-3 text-muted-foreground font-medium">Status</th>
-            <th className="text-center p-3 text-muted-foreground font-medium hidden md:table-cell">Plan</th>
             <th className="text-right p-3 text-muted-foreground font-medium">Actions</th>
           </tr></thead>
           <tbody>
             {filtered.map(a => (
               <tr key={a.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                <td className="p-3 font-medium text-foreground">{a.name}</td>
+                <td className="p-3">
+                  <div className="font-medium text-foreground">{a.name}</div>
+                  <div className="text-[10px] text-muted-foreground">{a.agentId}</div>
+                </td>
                 <td className="p-3 text-muted-foreground hidden md:table-cell">{a.phone}</td>
-                <td className="p-3 text-primary font-mono text-[10px] hidden lg:table-cell">{a.agentId}</td>
-                <td className="p-3 text-center font-bold text-accent">{a.balance.toLocaleString()}</td>
-                <td className="p-3 text-center hidden sm:table-cell">{a.sharedMovies + a.sharedSeries}</td>
-                <td className="p-3 text-center hidden lg:table-cell text-primary">{a.totalEarnings.toLocaleString()}</td>
+                <td className="p-3 text-center">
+                  <div className="text-foreground">{a.plan}</div>
+                  <div className="text-[10px] text-muted-foreground">Exp: {a.planExpiry}</div>
+                </td>
+                <td className="p-3 text-center font-bold text-primary">{a.balance.toLocaleString()}</td>
                 <td className="p-3 text-center">
                   <Badge className={`text-[9px] border-0 ${a.status === "active" ? "bg-primary/20 text-primary" : a.status === "blocked" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>{a.status}</Badge>
                 </td>
-                <td className="p-3 text-center text-muted-foreground hidden md:table-cell">{a.plan}</td>
                 <td className="p-3 text-right">
                   <div className="flex gap-1 justify-end">
-                    {a.status !== "blocked" && <button onClick={() => handleAction("block", a)} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-destructive"><Ban className="w-3.5 h-3.5" /></button>}
-                    {a.status !== "active" && <button onClick={() => handleAction("activate", a)} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary"><CheckCircle className="w-3.5 h-3.5" /></button>}
-                    <button onClick={() => handleAction("remove", a)} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                    {a.status !== "active" && <button onClick={() => setActionModal({ type: "activate", agent: a })} className="p-1.5 rounded-md hover:bg-secondary text-primary" title="Activate"><CheckCircle className="w-3.5 h-3.5" /></button>}
+                    {a.status === "active" && <button onClick={() => setActionModal({ type: "deactivate", agent: a })} className="p-1.5 rounded-md hover:bg-secondary text-accent" title="Deactivate"><Ban className="w-3.5 h-3.5" /></button>}
+                    <button onClick={() => setActionModal({ type: "upgrade", agent: a })} className="p-1.5 rounded-md hover:bg-secondary text-blue-400" title="Upgrade Plan"><ArrowUpDown className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setActionModal({ type: "delete", agent: a })} className="p-1.5 rounded-md hover:bg-secondary text-destructive" title="Delete Agent"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-muted-foreground text-xs">No agents yet.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">No agents yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -873,25 +928,21 @@ const AgentSection = ({ agents, search }: { agents: AgentItem[]; search: string 
       {actionModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setActionModal(null)}>
           <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-bold text-foreground mb-3 capitalize">{actionModal.type} Agent</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              {actionModal.type === "block" && `Block ${actionModal.agent.name}?`}
-              {actionModal.type === "remove" && `Remove ${actionModal.agent.name}?`}
-              {actionModal.type === "activate" && `Activate ${actionModal.agent.name}?`}
-            </p>
-            {actionModal.type === "activate" && (
+            <h3 className="text-sm font-bold text-foreground mb-2 capitalize">{actionModal.type} Agent</h3>
+            <p className="text-muted-foreground text-xs mb-4">Are you sure you want to {actionModal.type} <b>{actionModal.agent.name}</b>?</p>
+            {(actionModal.type === "activate" || actionModal.type === "upgrade") && (
               <div className="mb-4">
                 <select className="w-full h-9 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={selectedPlan} onChange={e => setSelectedPlan(e.target.value)}>
                   <option value="">-- Select Plan --</option>
                   {adminPlans.filter(p => p.type === "agent" || p.type === "user").map(p => (
-                    <option key={p.id} value={p.name}>{p.name} - {p.price.toLocaleString()} UGX / {p.duration}</option>
+                    <option key={p.id} value={p.name}>{p.name} - UGX {p.price.toLocaleString()} / {p.duration}</option>
                   ))}
                 </select>
               </div>
             )}
             <div className="flex gap-2 justify-end">
               <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setActionModal(null)}>Cancel</Button>
-              <Button size="sm" className={`h-8 text-xs ${actionModal.type === "remove" || actionModal.type === "block" ? "bg-destructive hover:bg-destructive/80" : ""}`} onClick={confirmAction}>Confirm</Button>
+              <Button size="sm" className={`h-8 text-xs ${actionModal.type === "delete" || actionModal.type === "block" || actionModal.type === "deactivate" ? "bg-destructive hover:bg-destructive/80" : ""}`} onClick={confirmAction}>Confirm</Button>
             </div>
           </div>
         </div>
