@@ -463,7 +463,7 @@ const Watch = () => {
       return;
     }
     // Ensure filename reflects the actual content
-    const baseName = drama.title.replace(/[/\\?%*:|"<>]/g, '-');
+    const baseName = (drama.title || "Video").replace(/[/\\?%*:|"<>]/g, '-');
     const fileName = (currentEpisode
       ? `${baseName}_E${currentEpisode.episodeNumber}`
       : baseName) + " vj. paul ug (www.luofilm.site).mp4";

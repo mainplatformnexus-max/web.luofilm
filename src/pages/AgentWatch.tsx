@@ -137,7 +137,7 @@ const AgentWatch = () => {
       toast({ title: "No download available", variant: "destructive" });
       return;
     }
-    const baseName = title.replace(/[/\\?%*:|"<>]/g, '-');
+    const baseName = (title || "Video").replace(/[/\\?%*:|"<>]/g, '-');
     const fileName = (currentEpisode
       ? `${baseName}_E${currentEpisode.episodeNumber}`
       : baseName) + " vj. paul ug (www.luofilm.site).mp4";
