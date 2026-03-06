@@ -473,18 +473,23 @@ const Watch = () => {
       toast({ title: "No download available", variant: "destructive" });
       return;
     }
+
+    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadUrl)}&filename=${encodeURIComponent(fileName)}`;
     
-    downloadVideoFile(
-      downloadUrl,
-      fileName,
-      () => { 
-        setIsDownloading(true); 
-        toast({ title: "Starting Download", description: `Fetching ${fileName}...` }); 
-      },
-      () => setIsDownloading(false),
-      (msg) => toast({ title: "Download failed", description: msg, variant: "destructive" }),
-      (name) => toast({ title: "Download initiated", description: "Check your browser's download manager." })
-    );
+    setIsDownloading(true);
+    toast({ title: "Starting Download", description: `Fetching ${fileName}...` });
+
+    const link = document.createElement("a");
+    link.href = backendUrl;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+      setIsDownloading(false);
+      toast({ title: "Download initiated", description: "Check your browser's download manager." });
+    }, 1000);
   };
 
   const handleWatchOnTV = () => {
@@ -530,7 +535,7 @@ const Watch = () => {
             ) : (currentEpisode?.streamLink || drama.streamLink) ? (
               <ArtPlayerComponent
                 key={currentEpisode?.streamLink || drama.streamLink || ""}
-                url={currentEpisode?.streamLink || drama.streamLink || ""}
+                src={currentEpisode?.streamLink || drama.streamLink || ""}
                 poster={drama.image}
                 title={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
               />

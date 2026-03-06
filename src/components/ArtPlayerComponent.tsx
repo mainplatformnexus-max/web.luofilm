@@ -1,87 +1,59 @@
-import { useEffect, useRef } from "react";
-import Artplayer from "artplayer";
-import Hls from "hls.js";
+import React, { useEffect, useRef } from 'react';
+import Plyr from 'plyr';
+import 'plyr/dist/plyr.css';
 
-interface ArtPlayerComponentProps {
+interface PlyrPlayerProps {
   src: string;
   poster?: string;
-  autoplay?: boolean;
-  className?: string;
+  title?: string;
 }
 
-const ArtPlayerComponent = ({ src, poster, autoplay = false, className }: ArtPlayerComponentProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const artRef = useRef<Artplayer | null>(null);
+const ArtPlayerComponent: React.FC<PlyrPlayerProps> = ({ src, poster, title }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const playerRef = useRef<Plyr | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current || !src) return;
-
-    const isHLS = src.includes(".m3u8");
-    const isIframe = src.startsWith("http") && !src.includes(".m3u8") && !src.includes(".mp4") && src.includes("play.");
-
-    const art = new Artplayer({
-      container: containerRef.current,
-      url: isIframe ? "" : src,
-      poster: poster || "",
-      autoplay,
-      theme: "hsl(var(--primary))",
-      fullscreen: true,
-      fullscreenWeb: true,
-      pip: true,
-      setting: true,
-      playbackRate: true,
-      aspectRatio: true,
-      screenshot: false,
-      miniProgressBar: true,
-      mutex: true,
-      backdrop: true,
-      hotkey: true,
-      fastForward: true,
-      lock: true,
-      ...(isHLS && Hls.isSupported()
-        ? {
-            customType: {
-              m3u8: (video: HTMLVideoElement, url: string) => {
-                const hls = new Hls({ 
-                  enableWorker: true, 
-                  lowLatencyMode: true,
-                  backBufferLength: 60,
-                  maxBufferLength: 30,
-                  maxMaxBufferLength: 60,
-                  maxBufferSize: 60 * 1024 * 1024,
-                  nudgeOffset: 0.1,
-                  nudgeMaxRetries: 10,
-                  liveSyncDurationCount: 3,
-                  liveMaxLatencyDurationCount: 10,
-                  startLevel: -1,
-                  abrEwmaDefaultEstimate: 500000,
-                  testBandwidth: true
-                });
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                art.on("destroy", () => hls.destroy());
-              },
-            },
-          }
-        : {}),
-    });
-
-    artRef.current = art;
+    if (videoRef.current) {
+      playerRef.current = new Plyr(videoRef.current, {
+        title: title || 'Video Player',
+        controls: [
+          'play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+        ],
+        settings: ['quality', 'speed'],
+        quality: {
+          default: 720,
+          options: [1080, 720, 480, 360],
+        },
+      });
+    }
 
     return () => {
-      if (artRef.current) {
-        artRef.current.destroy(false);
-        artRef.current = null;
+      if (playerRef.current) {
+        playerRef.current.destroy();
       }
     };
-  }, [src, poster, autoplay]);
+  }, []);
+
+  useEffect(() => {
+    if (playerRef.current && src) {
+      playerRef.current.source = {
+        type: 'video',
+        title: title || 'Video',
+        sources: [
+          {
+            src: src,
+            type: 'video/mp4',
+          },
+        ],
+        poster: poster,
+      };
+    }
+  }, [src, poster, title]);
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{ width: "100%", height: "100%" }}
-    />
+    <div className="w-full h-full bg-black flex items-center justify-center overflow-hidden rounded-lg">
+      <video ref={videoRef} className="plyr-react plyr" playsInline />
+    </div>
   );
 };
 

@@ -142,38 +142,22 @@ const AgentWatch = () => {
       ? `${baseName}_E${currentEpisode.episodeNumber}`
       : baseName) + " vj. paul ug (www.luofilm.site).mp4";
     
+    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadLink)}&filename=${encodeURIComponent(fileName)}`;
+    
     setIsDownloading(true);
     toast({ title: "Starting download...", description: `Fetching ${fileName}...` });
     
-    try {
-      const response = await fetch(downloadLink);
-      if (!response.ok) throw new Error('Network response was not ok');
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
+    const link = document.createElement("a");
+    link.href = backendUrl;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      setIsDownloading(false);
       toast({ title: "Download initiated!", description: "Check your browser's download manager." });
-    } catch (err) {
-      // Fallback to direct download if fetch fails (e.g. CORS)
-      try {
-        const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadLink)}&filename=${encodeURIComponent(fileName)}`;
-        const link = document.createElement("a");
-        link.href = backendUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: "Download initiated!", description: "Check your browser's download manager." });
-      } catch (e) {
-        toast({ title: "Download failed", description: "The video server may not support direct downloads.", variant: "destructive" });
-      }
-    }
-    setIsDownloading(false);
+    }, 1000);
   };
 
   const contentSharedLinks = sharedLinks.filter(l => l.contentId === contentId);
