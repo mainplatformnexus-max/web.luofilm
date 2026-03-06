@@ -32,9 +32,10 @@ interface ContentRowProps {
   showRank?: boolean;
   titleColor?: string;
   icon?: LucideIcon;
+  isGrid?: boolean;
 }
 
-const ContentRow = ({ title, dramas, showRank, titleColor, icon: Icon }: ContentRowProps) => {
+const ContentRow = ({ title, dramas, showRank, titleColor, icon: Icon, isGrid }: ContentRowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const sectionId = TITLE_TO_SECTION[title];
@@ -69,28 +70,40 @@ const ContentRow = ({ title, dramas, showRank, titleColor, icon: Icon }: Content
       </div>
 
       <div className="relative group/row">
-        <button
-          onClick={() => scroll("left")}
-          className="absolute left-0 top-0 bottom-0 z-10 w-7 bg-background/70 opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center justify-center rounded-r"
-        >
-          <ChevronLeft className="w-4 h-4 text-foreground" />
-        </button>
+        {!isGrid && (
+          <>
+            <button
+              onClick={() => scroll("left")}
+              className="absolute left-0 top-0 bottom-0 z-10 w-7 bg-background/70 opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center justify-center rounded-r"
+            >
+              <ChevronLeft className="w-4 h-4 text-foreground" />
+            </button>
 
-        <div
-          ref={scrollRef}
-          className="flex gap-2.5 overflow-x-auto scrollbar-hide scroll-smooth"
-        >
-          {dramas.map((drama) => (
-            <DramaCard key={drama.id} drama={drama} showRank={showRank} />
-          ))}
-        </div>
+            <div
+              ref={scrollRef}
+              className="flex gap-2.5 overflow-x-auto scrollbar-hide scroll-smooth"
+            >
+              {dramas.map((drama) => (
+                <DramaCard key={drama.id} drama={drama} showRank={showRank} />
+              ))}
+            </div>
 
-        <button
-          onClick={() => scroll("right")}
-          className="absolute right-0 top-0 bottom-0 z-10 w-7 bg-background/70 opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center justify-center rounded-l"
-        >
-          <ChevronRight className="w-4 h-4 text-foreground" />
-        </button>
+            <button
+              onClick={() => scroll("right")}
+              className="absolute right-0 top-0 bottom-0 z-10 w-7 bg-background/70 opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center justify-center rounded-l"
+            >
+              <ChevronRight className="w-4 h-4 text-foreground" />
+            </button>
+          </>
+        )}
+
+        {isGrid && (
+          <div className="grid grid-cols-3 md:flex md:flex-nowrap md:overflow-x-auto gap-2.5 scrollbar-hide">
+            {dramas.map((drama) => (
+              <DramaCard key={drama.id} drama={drama} showRank={showRank} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -77,7 +77,7 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
   return (
     <>
       <div
-        className={`flex-shrink-0 group cursor-pointer ${showRank && rankNumber ? "flex items-center w-[160px] md:w-[195px]" : "w-[120px] md:w-[145px]"}`}
+        className={`flex-shrink-0 group cursor-pointer ${showRank && rankNumber ? "flex items-center w-full md:w-[195px]" : "w-full md:w-[145px]"}`}
         onClick={handleClick}
       >
         {/* Large rank number - Netflix style, vertically centered */}

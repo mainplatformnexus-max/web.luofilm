@@ -156,10 +156,10 @@ const Adult = () => {
       <GenreTags activeGenre={activeGenre} onGenreChange={setActiveGenre} />
       
       <div className="space-y-2">
-        {dramas.length > 0 && <ContentRow title="18+ Premium Content" dramas={dramas} icon={Star} />}
-        {popular.length > 0 && <ContentRow title="Trending Adult" dramas={popular} icon={TrendingUp} />}
-        {topTen.length > 0 && <ContentRow title="Top Rated 18+" dramas={topTen} icon={Star} showRank />}
-        {hotDrama.length > 0 && <ContentRow title="Hot Selection" dramas={hotDrama} icon={Flame} />}
+        {dramas.length > 0 && <ContentRow title="18+ Premium Content" dramas={dramas} icon={Star} isGrid />}
+        {popular.length > 0 && <ContentRow title="Trending Adult" dramas={popular} icon={TrendingUp} isGrid />}
+        {topTen.length > 0 && <ContentRow title="Top Rated 18+" dramas={topTen} icon={Star} showRank isGrid />}
+        {hotDrama.length > 0 && <ContentRow title="Hot Selection" dramas={hotDrama} icon={Flame} isGrid />}
       </div>
 
       {dramas.length === 0 && (

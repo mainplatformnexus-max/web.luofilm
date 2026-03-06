@@ -95,14 +95,14 @@ const Movies = () => {
     <div className="min-h-screen bg-background">
       <HeroBanner page="movies" compact />
       <GenreTags activeGenre={activeGenre} onGenreChange={setActiveGenre} />
-      {dramas.length > 0 && <ContentRow title="All Movies" dramas={dramas} icon={Film} />}
-      {popular.length > 0 && <ContentRow title="Popular Movies" dramas={popular} icon={TrendingUp} />}
-      {topTen.length > 0 && <ContentRow title="Top Rated" dramas={topTen} icon={Star} showRank />}
-      {comingSoon.length > 0 && <ContentRow title="Coming Soon & Upcoming" dramas={comingSoon} icon={Clock} />}
-      {hotDrama.length > 0 && <ContentRow title="Hot" dramas={hotDrama} icon={Flame} />}
-      {sweetRomance.length > 0 && <ContentRow title="Sweet Romance" dramas={sweetRomance} titleColor="hsl(30, 100%, 50%)" icon={Heart} />}
-      {ancientCostume.length > 0 && <ContentRow title="Ancient Costume" dramas={ancientCostume} titleColor="hsl(30, 100%, 50%)" icon={Sparkles} />}
-      {highQuality.length > 0 && <ContentRow title="High Quality" dramas={highQuality} icon={Crown} />}
+      {dramas.length > 0 && <ContentRow title="All Movies" dramas={dramas} icon={Film} isGrid />}
+      {popular.length > 0 && <ContentRow title="Popular Movies" dramas={popular} icon={TrendingUp} isGrid />}
+      {topTen.length > 0 && <ContentRow title="Top Rated" dramas={topTen} icon={Star} showRank isGrid />}
+      {comingSoon.length > 0 && <ContentRow title="Coming Soon & Upcoming" dramas={comingSoon} icon={Clock} isGrid />}
+      {hotDrama.length > 0 && <ContentRow title="Hot" dramas={hotDrama} icon={Flame} isGrid />}
+      {sweetRomance.length > 0 && <ContentRow title="Sweet Romance" dramas={sweetRomance} titleColor="hsl(30, 100%, 50%)" icon={Heart} isGrid />}
+      {ancientCostume.length > 0 && <ContentRow title="Ancient Costume" dramas={ancientCostume} titleColor="hsl(30, 100%, 50%)" icon={Sparkles} isGrid />}
+      {highQuality.length > 0 && <ContentRow title="High Quality" dramas={highQuality} icon={Crown} isGrid />}
       {dramas.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
           <Film className="w-10 h-10 mb-4" />

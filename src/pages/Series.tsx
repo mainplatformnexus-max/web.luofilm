@@ -79,15 +79,15 @@ const Series = () => {
     <div className="min-h-screen bg-background">
       <HeroBanner page="series" compact />
       <GenreTags activeGenre={activeGenre} onGenreChange={setActiveGenre} />
-      {dramas.length > 0 && <ContentRow title="All Series" dramas={dramas} icon={Tv} />}
-      {popular.length > 0 && <ContentRow title="Popular Series" dramas={popular} icon={TrendingUp} />}
-      {topTen.length > 0 && <ContentRow title="Top Rated" dramas={topTen} icon={Star} showRank />}
-      {comingSoon.length > 0 && <ContentRow title="Coming Soon" dramas={comingSoon} icon={Clock} />}
-      {hotDrama.length > 0 && <ContentRow title="Hot Dramas" dramas={hotDrama} icon={Flame} />}
-      {sweetRomance.length > 0 && <ContentRow title="Sweet Romance" dramas={sweetRomance} titleColor="hsl(30, 100%, 50%)" icon={Heart} />}
-      {ancientCostume.length > 0 && <ContentRow title="Ancient Costume" dramas={ancientCostume} titleColor="hsl(30, 100%, 50%)" icon={Sparkles} />}
-      {highQuality.length > 0 && <ContentRow title="High Quality" dramas={highQuality} icon={Crown} />}
-      {dramaSelection.length > 0 && <ContentRow title="Drama Selection" dramas={dramaSelection} icon={ListOrdered} showRank />}
+      {dramas.length > 0 && <ContentRow title="All Series" dramas={dramas} icon={Tv} isGrid />}
+      {popular.length > 0 && <ContentRow title="Popular Series" dramas={popular} icon={TrendingUp} isGrid />}
+      {topTen.length > 0 && <ContentRow title="Top Rated" dramas={topTen} icon={Star} showRank isGrid />}
+      {comingSoon.length > 0 && <ContentRow title="Coming Soon" dramas={comingSoon} icon={Clock} isGrid />}
+      {hotDrama.length > 0 && <ContentRow title="Hot Dramas" dramas={hotDrama} icon={Flame} isGrid />}
+      {sweetRomance.length > 0 && <ContentRow title="Sweet Romance" dramas={sweetRomance} titleColor="hsl(30, 100%, 50%)" icon={Heart} isGrid />}
+      {ancientCostume.length > 0 && <ContentRow title="Ancient Costume" dramas={ancientCostume} titleColor="hsl(30, 100%, 50%)" icon={Sparkles} isGrid />}
+      {highQuality.length > 0 && <ContentRow title="High Quality" dramas={highQuality} icon={Crown} isGrid />}
+      {dramaSelection.length > 0 && <ContentRow title="Drama Selection" dramas={dramaSelection} icon={ListOrdered} showRank isGrid />}
       {dramas.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
           <Tv className="w-10 h-10 mb-4" />
