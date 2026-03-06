@@ -4,6 +4,7 @@ import { useState } from "react";
 import AgentAccessModal from "./AgentAccessModal";
 import SubscribeModal from "./SubscribeModal";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import logo from "@/assets/logo.png";
 
 const navItems = [
   { label: "Movies", path: "/movies", icon: Film },
@@ -52,6 +53,7 @@ const BottomNav = () => {
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
+              const isAgent = item.path === "#agent";
 
               return (
                 <button
@@ -59,8 +61,8 @@ const BottomNav = () => {
                   onClick={() => handleClick(item.path)}
                   className="flex flex-col items-center py-1 px-1 min-w-[64px] transition-all relative"
                 >
-                  <div className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all ${active ? "bg-primary text-primary-foreground scale-95 shadow-md shadow-primary/20" : "text-muted-foreground hover:bg-secondary"}`}>
-                    <Icon className={`w-5 h-5`} />
+                  <div className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all ${active ? "bg-primary text-primary-foreground scale-95 shadow-md shadow-primary/20" : isAgent ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-secondary"}`}>
+                    {isAgent ? <img src={logo} alt="" className="w-5 h-5 rounded-full object-contain" /> : <Icon className={`w-5 h-5`} />}
                     {item.badge && (
                       <span className="absolute -top-1 -right-1 flex h-3.5 w-7 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground border-2 border-background shadow-sm">
                         {item.badge}

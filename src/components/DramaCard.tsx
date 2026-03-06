@@ -77,19 +77,19 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
   return (
     <>
       <div
-        className={`flex-shrink-0 group cursor-pointer ${showRank && rankNumber ? "flex items-center w-full md:w-[195px]" : "w-full md:w-[145px]"}`}
+        className={`flex-shrink-0 group cursor-pointer w-full transition-all duration-300 hover:translate-y-[-4px] ${showRank && rankNumber ? "flex items-center" : ""}`}
         onClick={handleClick}
       >
         {/* Large rank number - Netflix style, vertically centered */}
         {showRank && rankNumber && (
-          <div className="relative flex-shrink-0 w-[45px] md:w-[55px] flex items-center justify-center -mr-3 z-10">
+          <div className="relative flex-shrink-0 w-[45px] md:w-[60px] flex items-center justify-center -mr-4 z-10">
             <span
-              className="font-black italic leading-none select-none"
+              className="font-black italic leading-none select-none drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]"
               style={{
-                fontSize: "clamp(70px, 10vw, 100px)",
-                color: "#9b59b6",
-                WebkitTextStroke: "2px hsl(var(--primary))",
-                filter: "drop-shadow(0 0 12px hsl(var(--primary) / 0.5))",
+                fontSize: "clamp(80px, 12vw, 120px)",
+                color: "transparent",
+                WebkitTextStroke: "2.5px hsl(var(--primary))",
+                filter: "drop-shadow(0 0 15px hsl(var(--primary) / 0.4))",
               }}
             >
               {rankNumber}
@@ -97,44 +97,44 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="relative rounded-md overflow-hidden mb-1.5 aspect-[2/3]">
+          <div className="relative rounded-xl overflow-hidden mb-2 aspect-[2/3] shadow-lg group-hover:shadow-primary/20 group-hover:shadow-2xl transition-all duration-300">
             <img
               src={drama.image}
               alt={drama.title}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               loading="lazy"
             />
             {/* Display order number */}
             {drama.displayOrder != null && drama.displayOrder > 0 && !showRank && (
               <div className="absolute top-0 left-0">
-                <div className="bg-primary/90 text-primary-foreground text-[10px] font-black px-1.5 py-0.5 rounded-br-lg min-w-[22px] text-center">
+                <div className="bg-primary/95 text-primary-foreground text-[10px] font-black px-2 py-1 rounded-br-xl min-w-[24px] text-center shadow-md">
                   {drama.displayOrder}
                 </div>
               </div>
             )}
             {isStillAgent && (
-              <div className="absolute top-1.5 right-1.5 bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded">
+              <div className="absolute top-2 right-2 bg-accent/95 backdrop-blur-sm text-accent-foreground text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg">
                 🔥 Agent Only
               </div>
             )}
             {!isStillAgent && drama.badge && (
-              <div className="absolute top-1.5 right-1.5 bg-badge-coming text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded">
+              <div className="absolute top-2 right-2 bg-badge-coming/95 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/10">
                 {drama.badge}
               </div>
             )}
             {uploadBadge && !isStillAgent && !drama.badge && (
-              <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg">
+              <div className="absolute top-2 right-2 bg-primary/95 backdrop-blur-sm text-primary-foreground text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/5">
                 {uploadBadge}
               </div>
             )}
             {drama.episodes && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4">
-                <p className="text-foreground text-[9px] font-medium">{drama.episodes}</p>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-2 pb-1.5 pt-6">
+                <p className="text-white text-[10px] font-semibold drop-shadow-md">{drama.episodes}</p>
               </div>
             )}
-            <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors" />
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 group-hover:ring-primary/30 transition-all rounded-xl" />
           </div>
-          <h3 className="text-foreground text-[11px] font-medium line-clamp-1">{drama.title}</h3>
+          <h3 className="text-foreground text-[11px] md:text-xs font-semibold line-clamp-1 group-hover:text-primary transition-colors px-0.5">{drama.title}</h3>
         </div>
       </div>
       <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} mode="agent" />

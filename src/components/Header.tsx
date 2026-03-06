@@ -68,14 +68,16 @@ const Header = () => {
           <nav className="hidden lg:flex items-center gap-1 mx-4 bg-secondary/60 rounded-full px-1.5 py-1 border border-border">
             {navLinks.filter(link => !link.adminOnly || isAdmin).map((link) => {
               const Icon = link.icon;
+              const isAgent = link.path === "#agent";
               return (
                 <button key={link.label} onClick={() => handleNavClick(link.path)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all relative ${
                     isActive(link.path) ? "bg-primary text-primary-foreground shadow-sm"
-                    : link.path === "#subscribe" || link.path === "#agent" ? "text-accent bg-accent/10 hover:bg-accent/20"
+                    : isAgent ? "text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20"
+                    : link.path === "#subscribe" ? "text-accent bg-accent/10 hover:bg-accent/20"
                     : "text-muted-foreground hover:text-foreground hover:bg-background"
                   }`}>
-                  <Icon className="w-3.5 h-3.5" />
+                  {isAgent ? <img src={logo} alt="" className="w-3.5 h-3.5 rounded-full object-contain" /> : <Icon className="w-3.5 h-3.5" />}
                   {link.label}
                   {link.badge && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-6 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground animate-pulse">
