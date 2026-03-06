@@ -35,20 +35,20 @@ const BottomNav = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-        {/* Glassmorphism background */}
-        <div className="bg-card/95 backdrop-blur-xl border-t border-border/60 shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+      <nav className="fixed bottom-4 left-4 right-4 z-50 lg:hidden">
+        {/* Modern Floating Bottom Nav */}
+        <div className="bg-card/80 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden">
           {canInstall && (
-            <div className="flex border-b border-border/60">
+            <div className="flex border-b border-white/5">
               <button
                 onClick={install}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-primary/20 to-primary/10 text-primary text-[10px] font-bold active:scale-[0.98] transition-transform"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary/20 text-primary text-[10px] font-bold active:scale-[0.98] transition-transform"
               >
-                <Download className="w-3 h-3" /> Install App
+                <Download className="w-3.5 h-3.5" /> Install Official App
               </button>
             </div>
           )}
-          <div className="flex items-end justify-around px-2 pb-[env(safe-area-inset-bottom)] relative">
+          <div className="flex items-center justify-between px-3 py-2 relative">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -58,13 +58,12 @@ const BottomNav = () => {
                   <button
                     key={item.label}
                     onClick={() => handleClick(item.path)}
-                    className="relative -mt-5 flex flex-col items-center"
+                    className="relative flex flex-col items-center group"
                   >
-                    {/* Outer glow ring */}
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-[0_4px_15px_rgba(0,170,80,0.4)] border-[3px] border-background transition-transform active:scale-95">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30 border border-white/20 transition-all group-active:scale-90">
                       <Icon className="w-6 h-6 text-primary-foreground" />
                     </div>
-                    <span className="text-primary text-[9px] font-bold mt-1">{item.label}</span>
+                    <span className="text-primary text-[8px] font-bold mt-1 opacity-80">{item.label}</span>
                   </button>
                 );
               }
@@ -73,20 +72,20 @@ const BottomNav = () => {
                 <button
                   key={item.label}
                   onClick={() => handleClick(item.path)}
-                  className="flex flex-col items-center py-2.5 px-3 min-w-[56px] transition-colors relative"
+                  className="flex flex-col items-center py-1 px-2 min-w-[60px] transition-all relative group"
                 >
-                  <div className={`relative p-1.5 rounded-xl transition-colors ${active ? "bg-primary/15" : ""}`}>
+                  <div className={`relative p-2 rounded-2xl transition-all ${active ? "bg-primary/20 scale-110" : "group-active:bg-white/5"}`}>
                     <Icon className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-muted-foreground"}`} />
                     {active && (
-                      <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
                     )}
                     {item.badge && (
-                      <span className="absolute -top-1 -right-1 flex h-2.5 w-5 items-center justify-center rounded-full bg-destructive text-[6px] font-bold text-destructive-foreground animate-pulse">
+                      <span className="absolute -top-1 -right-1 flex h-3 w-6 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground border border-background animate-pulse">
                         {item.badge}
                       </span>
                     )}
                   </div>
-                  <span className={`text-[9px] font-medium mt-0.5 ${active ? "text-primary" : "text-muted-foreground"}`}>
+                  <span className={`text-[9px] font-medium mt-1 transition-colors ${active ? "text-primary font-bold" : "text-muted-foreground"}`}>
                     {item.label}
                   </span>
                 </button>
@@ -97,7 +96,7 @@ const BottomNav = () => {
       </nav>
 
       {/* Spacer for bottom nav */}
-      <div className="h-16 lg:hidden" />
+      <div className="h-24 lg:hidden" />
 
       <AgentAccessModal
         open={showAgentAccess}

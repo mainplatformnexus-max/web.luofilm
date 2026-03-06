@@ -71,8 +71,11 @@ const Movies = () => {
   }, [movies]);
 
   const dramas = useMemo(() => {
-    if (activeGenre === "All Videos") return allDramas;
-    return allDramas.filter(d => genreMatch(d.genre, activeGenre));
+    let list = allDramas;
+    if (activeGenre !== "All Videos") {
+      list = allDramas.filter(d => genreMatch(d.genre, activeGenre));
+    }
+    return list;
   }, [allDramas, activeGenre]);
 
   if (movies === null) {
