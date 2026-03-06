@@ -82,14 +82,14 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
       >
         {/* Large rank number - Netflix style, vertically centered */}
         {showRank && rankNumber && (
-          <div className="relative flex-shrink-0 w-[45px] md:w-[60px] flex items-center justify-center -mr-4 z-10">
+          <div className="relative flex-shrink-0 w-[35px] md:w-[50px] flex items-center justify-center -mr-3 z-10">
             <span
-              className="font-black italic leading-none select-none drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+              className="font-black italic leading-none select-none drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]"
               style={{
-                fontSize: "clamp(80px, 12vw, 120px)",
-                color: "transparent",
-                WebkitTextStroke: "2.5px hsl(var(--primary))",
-                filter: "drop-shadow(0 0 15px hsl(var(--primary) / 0.4))",
+                fontSize: "clamp(60px, 10vw, 100px)",
+                color: "#9333ea",
+                WebkitTextStroke: "1.5px #9333ea",
+                filter: "drop-shadow(0 0 10px #9333ea / 0.4))",
               }}
             >
               {rankNumber}
@@ -97,7 +97,7 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="relative rounded-sm overflow-hidden mb-1 aspect-[2/3] shadow-md group-hover:shadow-primary/20 group-hover:shadow-lg transition-all duration-300">
+          <div className="relative rounded-sm overflow-hidden mb-0.5 aspect-[2/3] shadow-md group-hover:shadow-primary/20 group-hover:shadow-lg transition-all duration-300">
             <img
               src={drama.image}
               alt={drama.title}
@@ -134,6 +134,7 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
             )}
             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 group-hover:ring-primary/30 transition-all rounded-sm" />
           </div>
+          <h3 className="text-foreground text-[10px] md:text-[11px] font-semibold line-clamp-1 group-hover:text-primary transition-colors px-0.5">{drama.title}</h3>
         </div>
       </div>
       <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} mode="agent" />

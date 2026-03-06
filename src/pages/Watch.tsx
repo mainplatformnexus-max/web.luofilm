@@ -143,18 +143,32 @@ const downloadVideoFile = async (
 ) => {
   onStart();
   try {
-    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok');
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = backendUrl;
+    link.href = blobUrl;
     link.download = fileName;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
     onSuccess(fileName);
   } catch (err) {
-    onError("Download failed. Please try again or use a different browser.");
+    // Fallback to direct download if fetch fails (e.g. CORS)
+    try {
+      const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(fileName)}`;
+      const link = document.createElement("a");
+      link.href = backendUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      onSuccess(fileName);
+    } catch (e) {
+      onError("Download failed. Please try again or use a different browser.");
+    }
   }
   onEnd();
 };
