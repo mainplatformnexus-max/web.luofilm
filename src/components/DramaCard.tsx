@@ -97,44 +97,43 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="relative rounded-xl overflow-hidden mb-2 aspect-[2/3] shadow-lg group-hover:shadow-primary/20 group-hover:shadow-2xl transition-all duration-300">
+          <div className="relative rounded-sm overflow-hidden mb-1 aspect-[2/3] shadow-md group-hover:shadow-primary/20 group-hover:shadow-lg transition-all duration-300">
             <img
               src={drama.image}
               alt={drama.title}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
             />
             {/* Display order number */}
             {drama.displayOrder != null && drama.displayOrder > 0 && !showRank && (
               <div className="absolute top-0 left-0">
-                <div className="bg-primary/95 text-primary-foreground text-[10px] font-black px-2 py-1 rounded-br-xl min-w-[24px] text-center shadow-md">
+                <div className="bg-primary/95 text-primary-foreground text-[9px] font-black px-1.5 py-0.5 rounded-br-sm min-w-[20px] text-center shadow-md">
                   {drama.displayOrder}
                 </div>
               </div>
             )}
             {isStillAgent && (
-              <div className="absolute top-2 right-2 bg-accent/95 backdrop-blur-sm text-accent-foreground text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg">
+              <div className="absolute top-1.5 right-1.5 bg-accent/95 backdrop-blur-sm text-accent-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-sm shadow-lg">
                 🔥 Agent Only
               </div>
             )}
             {!isStillAgent && drama.badge && (
-              <div className="absolute top-2 right-2 bg-badge-coming/95 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/10">
+              <div className="absolute top-1.5 right-1.5 bg-badge-coming/95 backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded-sm shadow-lg border border-white/10">
                 {drama.badge}
               </div>
             )}
             {uploadBadge && !isStillAgent && !drama.badge && (
-              <div className="absolute top-2 right-2 bg-primary/95 backdrop-blur-sm text-primary-foreground text-[8px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/5">
+              <div className="absolute top-1.5 right-1.5 bg-primary/95 backdrop-blur-sm text-primary-foreground text-[7px] font-bold px-1.5 py-0.5 rounded-sm shadow-lg border border-white/5">
                 {uploadBadge}
               </div>
             )}
             {drama.episodes && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-2 pb-1.5 pt-6">
-                <p className="text-white text-[10px] font-semibold drop-shadow-md">{drama.episodes}</p>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-1.5 pb-1 pt-4">
+                <p className="text-white text-[9px] font-semibold drop-shadow-md">{drama.episodes}</p>
               </div>
             )}
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 group-hover:ring-primary/30 transition-all rounded-xl" />
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 group-hover:ring-primary/30 transition-all rounded-sm" />
           </div>
-          <h3 className="text-foreground text-[11px] md:text-xs font-semibold line-clamp-1 group-hover:text-primary transition-colors px-0.5">{drama.title}</h3>
         </div>
       </div>
       <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} mode="agent" />

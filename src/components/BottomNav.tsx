@@ -9,8 +9,9 @@ import logo from "@/assets/logo.png";
 const navItems = [
   { label: "Movies", path: "/movies", icon: Film },
   { label: "Series", path: "/series", icon: Tv },
+  { label: "Live TV", path: "/tv-channel", icon: Radio },
   { label: "Agent", path: "#agent", icon: ShieldCheck, isCenter: true },
-  { label: "18+", path: "/adult", icon: ShieldCheck, badge: "New" },
+  { label: "18+", path: "/adult", icon: ShieldCheck },
   { label: "Sport", path: "/live-sport", icon: Trophy },
 ];
 
@@ -38,18 +39,18 @@ const BottomNav = () => {
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pb-[env(safe-area-inset-bottom)]">
         {/* Professional Bottom Nav */}
-        <div className="bg-background/95 backdrop-blur-md border-t border-border shadow-lg">
+        <div className="bg-background/98 backdrop-blur-md border-t border-border/50 shadow-2xl">
           {canInstall && (
-            <div className="flex border-b border-border/50">
+            <div className="flex border-b border-border/30">
               <button
                 onClick={install}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-primary/10 text-primary text-[10px] font-bold active:bg-primary/20 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 py-1 bg-primary/5 text-primary text-[9px] font-bold active:bg-primary/10 transition-colors"
               >
-                <Download className="w-3.5 h-3.5" /> Install App
+                <Download className="w-3 h-3" /> Install App
               </button>
             </div>
           )}
-          <div className="flex items-center justify-around px-2 py-1.5">
+          <div className="flex items-center justify-between px-1 py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -59,19 +60,11 @@ const BottomNav = () => {
                 <button
                   key={item.label}
                   onClick={() => handleClick(item.path)}
-                  className="flex flex-col items-center py-1 px-1 min-w-[64px] transition-all relative"
+                  className="flex flex-col items-center py-0.5 px-0.5 flex-1 min-w-0 transition-all relative"
                 >
-                  <div className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all ${active ? "bg-primary text-primary-foreground scale-95 shadow-md shadow-primary/20" : isAgent ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:bg-secondary"}`}>
-                    {isAgent ? <img src={logo} alt="" className="w-5 h-5 rounded-full object-contain" /> : <Icon className={`w-5 h-5`} />}
-                    {item.badge && (
-                      <span className="absolute -top-1 -right-1 flex h-3.5 w-7 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground border-2 border-background shadow-sm">
-                        {item.badge}
-                      </span>
-                    )}
+                  <div className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all ${active ? "bg-primary text-primary-foreground scale-90 shadow-lg shadow-primary/20" : isAgent ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground active:bg-secondary/50"}`}>
+                    {isAgent ? <img src={logo} alt="" className="w-4 h-4 rounded-full object-contain" /> : <Icon className={`w-4 h-4`} />}
                   </div>
-                  <span className={`text-[9px] font-medium mt-1 transition-colors ${active ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                    {item.label}
-                  </span>
                 </button>
               );
             })}
@@ -80,7 +73,7 @@ const BottomNav = () => {
       </nav>
 
       {/* Spacer for bottom nav */}
-      <div className="h-20 lg:hidden" />
+      <div className="h-12 lg:hidden" />
 
       <AgentAccessModal
         open={showAgentAccess}
