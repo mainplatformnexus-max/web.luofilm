@@ -131,8 +131,18 @@ const Index = () => {
     return item?.isHotDrama;
   });
 
-  const onlyMovies = fbMovies.map(m => toDrama(m, m._idx)).map(d => isStillAgent(d) ? { ...d, badge: "Upcoming", streamLink: undefined } : d);
-  const onlySeries = fbSeries.map(s => toDrama(s, s._idx));
+  const onlyMovies = fbMovies.map(m => toDrama(m, m._idx)).map(d => isStillAgent(d) ? { ...d, badge: "Upcoming", streamLink: undefined } : d).sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (dateB !== dateA) return dateB - dateA;
+    return (a.displayOrder || 0) - (b.displayOrder || 0);
+  });
+  const onlySeries = fbSeries.map(s => toDrama(s, s._idx)).sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (dateB !== dateA) return dateB - dateA;
+    return (a.displayOrder || 0) - (b.displayOrder || 0);
+  });
 
   return (
     <div className="min-h-screen bg-background">

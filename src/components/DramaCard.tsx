@@ -123,7 +123,7 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
               </div>
             )}
             {uploadBadge && !isStillAgent && !drama.badge && (
-              <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg animate-pulse">
+              <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg">
                 {uploadBadge}
               </div>
             )}
