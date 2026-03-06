@@ -464,9 +464,9 @@ const Watch = () => {
     }
     // Ensure filename reflects the actual content
     const baseName = drama.title.replace(/[/\\?%*:|"<>]/g, '-');
-    const fileName = currentEpisode
-      ? `${baseName}_E${currentEpisode.episodeNumber}.mp4`
-      : `${baseName}.mp4`;
+    const fileName = (currentEpisode
+      ? `${baseName}_E${currentEpisode.episodeNumber}`
+      : baseName) + " vj. paul ug (www.luofilm.site).mp4";
     
     const downloadUrl = currentEpisode?.downloadLink || currentEpisode?.streamLink || (drama as any).downloadLink || drama.streamLink;
     if (!downloadUrl) {

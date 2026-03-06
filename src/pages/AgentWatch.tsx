@@ -137,23 +137,41 @@ const AgentWatch = () => {
       toast({ title: "No download available", variant: "destructive" });
       return;
     }
-    const fileName = currentEpisode
-      ? `${title} - Episode ${currentEpisode.episodeNumber}.mp4`
-      : `${title}.mp4`;
+    const baseName = title.replace(/[/\\?%*:|"<>]/g, '-');
+    const fileName = (currentEpisode
+      ? `${baseName}_E${currentEpisode.episodeNumber}`
+      : baseName) + " vj. paul ug (www.luofilm.site).mp4";
+    
     setIsDownloading(true);
-    toast({ title: "Starting download...", description: `Opening ${fileName}...` });
+    toast({ title: "Starting download...", description: `Fetching ${fileName}...` });
+    
     try {
-      const a = document.createElement("a");
-      a.href = downloadLink;
-      a.download = fileName;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const response = await fetch(downloadLink);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
       toast({ title: "Download initiated!", description: "Check your browser's download manager." });
-    } catch {
-      toast({ title: "Download failed", description: "The video server may not support direct downloads.", variant: "destructive" });
+    } catch (err) {
+      // Fallback to direct download if fetch fails (e.g. CORS)
+      try {
+        const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadLink)}&filename=${encodeURIComponent(fileName)}`;
+        const link = document.createElement("a");
+        link.href = backendUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: "Download initiated!", description: "Check your browser's download manager." });
+      } catch (e) {
+        toast({ title: "Download failed", description: "The video server may not support direct downloads.", variant: "destructive" });
+      }
     }
     setIsDownloading(false);
   };
