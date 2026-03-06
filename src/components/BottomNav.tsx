@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Film, Tv, Radio, Trophy, ShieldCheck, Download } from "lucide-react";
+import { Film, Tv, Radio, Trophy, ShieldCheck, Download, User } from "lucide-react";
 import { useState } from "react";
 import AgentAccessModal from "./AgentAccessModal";
 import SubscribeModal from "./SubscribeModal";
@@ -13,6 +13,7 @@ const navItems = [
   { label: "Agent", path: "#agent", icon: ShieldCheck, isCenter: true },
   { label: "18+", path: "/adult", icon: ShieldCheck },
   { label: "Sport", path: "/live-sport", icon: Trophy },
+  { label: "Account", path: "/profile", icon: User },
 ];
 
 const BottomNav = () => {
@@ -39,7 +40,7 @@ const BottomNav = () => {
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pb-[env(safe-area-inset-bottom)]">
         {/* Professional Bottom Nav */}
-        <div className="bg-background/98 backdrop-blur-md border-t border-border/50 shadow-2xl">
+        <div className="bg-background border-t border-border shadow-2xl">
           {canInstall && (
             <div className="flex border-b border-border/30">
               <button
@@ -60,11 +61,20 @@ const BottomNav = () => {
                 <button
                   key={item.label}
                   onClick={() => handleClick(item.path)}
-                  className="flex flex-col items-center py-0.5 px-0.5 flex-1 min-w-0 transition-all relative"
+                  className={`flex flex-col items-center py-0.5 px-0.5 flex-1 min-w-0 transition-all relative ${isAgent ? "z-10" : ""}`}
                 >
-                  <div className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all ${active ? "bg-primary text-primary-foreground scale-90 shadow-lg shadow-primary/20" : isAgent ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground active:bg-secondary/50"}`}>
-                    {isAgent ? <img src={logo} alt="" className="w-4 h-4 rounded-full object-contain" /> : <Icon className={`w-4 h-4`} />}
+                  <div className={`relative flex items-center justify-center transition-all 
+                    ${isAgent 
+                      ? "w-12 h-12 -mt-4 bg-primary text-primary-foreground rounded-full shadow-lg border-4 border-background scale-110" 
+                      : active 
+                        ? "w-8 h-8 rounded-full bg-primary/10 text-primary" 
+                        : "w-8 h-8 rounded-full text-muted-foreground active:bg-secondary/50"
+                    }`}>
+                    {isAgent ? <img src={logo} alt="" className="w-6 h-6 rounded-full object-contain" /> : <Icon className={`w-4 h-4`} />}
                   </div>
+                  <span className={`text-[8px] mt-0.5 truncate ${active || isAgent ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                    {item.label}
+                  </span>
                 </button>
               );
             })}
@@ -73,7 +83,7 @@ const BottomNav = () => {
       </nav>
 
       {/* Spacer for bottom nav */}
-      <div className="h-12 lg:hidden" />
+      <div className="h-14 lg:hidden" />
 
       <AgentAccessModal
         open={showAgentAccess}

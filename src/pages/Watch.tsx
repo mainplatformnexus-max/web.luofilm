@@ -474,7 +474,7 @@ const Watch = () => {
       return;
     }
 
-    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadUrl)}&filename=${encodeURIComponent(fileName)}`;
+    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadUrl)}&filename=${encodeURIComponent(fileName)}&download=1`;
     
     setIsDownloading(true);
     toast({ title: "Starting Download", description: `Fetching ${fileName}...` });

@@ -142,7 +142,7 @@ const AgentWatch = () => {
       ? `${baseName}_E${currentEpisode.episodeNumber}`
       : baseName) + " vj. paul ug (www.luofilm.site).mp4";
     
-    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadLink)}&filename=${encodeURIComponent(fileName)}`;
+    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadLink)}&filename=${encodeURIComponent(fileName)}&download=1`;
     
     setIsDownloading(true);
     toast({ title: "Starting download...", description: `Fetching ${fileName}...` });
