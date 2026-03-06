@@ -35,52 +35,34 @@ const BottomNav = () => {
 
   return (
     <>
-      <nav className="fixed bottom-4 left-4 right-4 z-50 lg:hidden">
-        {/* Modern Floating Bottom Nav */}
-        <div className="bg-card/80 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-3xl overflow-hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pb-[env(safe-area-inset-bottom)]">
+        {/* Professional Bottom Nav */}
+        <div className="bg-background/95 backdrop-blur-md border-t border-border shadow-lg">
           {canInstall && (
-            <div className="flex border-b border-white/5">
+            <div className="flex border-b border-border/50">
               <button
                 onClick={install}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary/20 text-primary text-[10px] font-bold active:scale-[0.98] transition-transform"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-primary/10 text-primary text-[10px] font-bold active:bg-primary/20 transition-colors"
               >
-                <Download className="w-3.5 h-3.5" /> Install Official App
+                <Download className="w-3.5 h-3.5" /> Install App
               </button>
             </div>
           )}
-          <div className="flex items-center justify-between px-3 py-2 relative">
+          <div className="flex items-center justify-around px-2 py-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
-
-              if (item.isCenter) {
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => handleClick(item.path)}
-                    className="relative flex flex-col items-center group"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30 border border-white/20 transition-all group-active:scale-90">
-                      <Icon className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                    <span className="text-primary text-[8px] font-bold mt-1 opacity-80">{item.label}</span>
-                  </button>
-                );
-              }
 
               return (
                 <button
                   key={item.label}
                   onClick={() => handleClick(item.path)}
-                  className="flex flex-col items-center py-1 px-2 min-w-[60px] transition-all relative group"
+                  className="flex flex-col items-center py-1 px-1 min-w-[64px] transition-all relative"
                 >
-                  <div className={`relative p-2 rounded-2xl transition-all ${active ? "bg-primary/20 scale-110" : "group-active:bg-white/5"}`}>
-                    <Icon className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-muted-foreground"}`} />
-                    {active && (
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
-                    )}
+                  <div className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all ${active ? "bg-primary text-primary-foreground scale-95 shadow-md shadow-primary/20" : "text-muted-foreground hover:bg-secondary"}`}>
+                    <Icon className={`w-5 h-5`} />
                     {item.badge && (
-                      <span className="absolute -top-1 -right-1 flex h-3 w-6 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground border border-background animate-pulse">
+                      <span className="absolute -top-1 -right-1 flex h-3.5 w-7 items-center justify-center rounded-full bg-destructive text-[7px] font-bold text-destructive-foreground border-2 border-background shadow-sm">
                         {item.badge}
                       </span>
                     )}
@@ -96,7 +78,7 @@ const BottomNav = () => {
       </nav>
 
       {/* Spacer for bottom nav */}
-      <div className="h-24 lg:hidden" />
+      <div className="h-20 lg:hidden" />
 
       <AgentAccessModal
         open={showAgentAccess}
