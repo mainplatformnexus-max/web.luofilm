@@ -333,61 +333,73 @@ const Watch = () => {
 
   // Dynamic SEO implementation
   useEffect(() => {
-    // Update meta tags
-    const updateMeta = (elementId: string, attr: string, value: string) => {
-      let el = document.getElementById(elementId) || document.querySelector(`meta[property="${attr}"]`) || document.querySelector(`meta[name="${attr}"]`);
-      if (el) el.setAttribute("content", value);
+    if (!drama) return;
+
+    const episodeText = currentEpisode ? ` - Episode ${currentEpisode.episodeNumber}` : "";
+    const pageTitle = `${drama.title}${episodeText} | Watch on LUO FILM`;
+    const description = drama.description 
+      ? (drama.description.length > 150 ? drama.description.substring(0, 157) + "..." : drama.description)
+      : `Stream ${drama.title}${episodeText} in high quality on LUO FILM.`;
+    
+    const image = drama.image.startsWith('http') ? drama.image : `https://luofilm.site${drama.image}`;
+
+    // Update document title
+    document.title = pageTitle;
+    
+    // Helper to update or add meta tags
+    const updateOrAddMeta = (property: string, content: string, isName = false) => {
+      const attr = isName ? 'name' : 'property';
+      let el = document.querySelector(`meta[${attr}="${property}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+      
+      // Also update by ID if they exist (from index.html)
+      const idMap: Record<string, string> = {
+        "og:title": "og-title",
+        "og:description": "og-desc",
+        "og:image": "og-image",
+        "twitter:title": "twitter-title",
+        "twitter:description": "twitter-desc",
+        "twitter:image": "twitter-image"
+      };
+      
+      if (idMap[property]) {
+        const idEl = document.getElementById(idMap[property]);
+        if (idEl) idEl.setAttribute("content", content);
+      }
     };
 
-    if (drama) {
-      const isSeries = !!episodes.length || !!drama.episodes;
-      const episodeText = currentEpisode ? ` - Episode ${currentEpisode.episodeNumber}` : "";
-      const pageTitle = `${drama.title}${episodeText} | Watch on LUO FILM`;
-      const description = drama.description 
-        ? (drama.description.length > 150 ? drama.description.substring(0, 157) + "..." : drama.description)
-        : `Stream ${drama.title}${episodeText} in high quality on LUO FILM.`;
-      
-      const image = drama.image.startsWith('http') ? drama.image : `https://luofilm.site${drama.image}`;
+    updateOrAddMeta("og:title", pageTitle);
+    updateOrAddMeta("og:description", description);
+    updateOrAddMeta("og:image", image);
+    updateOrAddMeta("og:url", window.location.href);
+    updateOrAddMeta("og:type", "video.other");
+    
+    updateOrAddMeta("twitter:title", pageTitle);
+    updateOrAddMeta("twitter:description", description);
+    updateOrAddMeta("twitter:image", image);
+    updateOrAddMeta("twitter:card", "summary_large_image");
 
-      document.title = pageTitle;
-      
-      // Update Meta Tags for SEO and Social Sharing
-      const updateOrAddMeta = (property: string, content: string, isName = false) => {
-        const attr = isName ? 'name' : 'property';
-        let el = document.querySelector(`meta[${attr}="${property}"]`);
-        if (!el) {
-          el = document.createElement('meta');
-          el.setAttribute(attr, property);
-          document.head.appendChild(el);
-        }
-        el.setAttribute('content', content);
-      };
+    updateOrAddMeta("description", description, true);
 
-      updateOrAddMeta("og:title", pageTitle);
-      updateOrAddMeta("og:description", description);
-      updateOrAddMeta("og:image", image);
-      updateOrAddMeta("og:url", window.location.href);
-      updateOrAddMeta("og:type", "video.other");
-      
-      updateOrAddMeta("twitter:title", pageTitle);
-      updateOrAddMeta("twitter:description", description);
-      updateOrAddMeta("twitter:image", image);
-      updateOrAddMeta("twitter:card", "summary_large_image");
-
-      updateOrAddMeta("description", description, true);
-
-      let favicon = document.querySelector('link[rel="icon"]');
-      if (favicon) favicon.setAttribute("href", image);
-    }
+    let favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.setAttribute("href", image);
 
     return () => {
       document.title = "LUO FILM";
-      updateMeta("og-title", "og:title", "LUO FILM");
-      updateMeta("og-image", "og:image", "/logo.png");
-      let favicon = document.querySelector('link[rel="icon"]');
-      if (favicon) favicon.setAttribute("href", "/logo.png");
+      // Reset to defaults
+      updateOrAddMeta("og:title", "LUO FILM");
+      updateOrAddMeta("og:description", "Watch and Download Luo Translated Movies, Live TV, and Sports on LUO FILM.");
+      updateOrAddMeta("og:image", "https://luofilm.site/logo.png");
+      
+      let fav = document.querySelector('link[rel="icon"]');
+      if (fav) fav.setAttribute("href", "/logo.png");
     };
-  }, [drama]);
+  }, [drama, currentEpisode]);
 
   if (isSport) return <SportWatch />;
 
@@ -465,10 +477,18 @@ const Watch = () => {
 
   const handleShare = async () => {
     const url = window.location.href;
-    const text = `Watch "${drama.title}" on LUO FILM`;
+    const isSeries = !!episodes.length || !!drama.episodes;
+    const episodeText = currentEpisode ? ` - Episode ${currentEpisode.episodeNumber}` : "";
+    const pageTitle = `${drama.title}${episodeText}`;
+    const text = `Watch "${pageTitle}" on LUO FILM`;
+    
     if (navigator.share) {
       try {
-        await navigator.share({ title: drama.title, text, url });
+        await navigator.share({ 
+          title: pageTitle, 
+          text: text, 
+          url: url 
+        });
       } catch {}
     } else {
       await navigator.clipboard.writeText(url);
