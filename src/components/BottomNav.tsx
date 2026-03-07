@@ -38,19 +38,31 @@ const BottomNav = () => {
 
   return (
     <>
+      {canInstall && (
+        <div className="fixed bottom-24 left-4 right-4 z-[60] lg:hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-primary text-primary-foreground rounded-2xl p-4 shadow-2xl flex items-center justify-between border border-primary-foreground/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <img src={logo} alt="Luo Film" className="w-7 h-7 object-contain" />
+              </div>
+              <div>
+                <p className="text-xs font-bold">Install Luo Film App</p>
+                <p className="text-[10px] opacity-80">Watch faster & save data</p>
+              </div>
+            </div>
+            <button
+              onClick={install}
+              className="bg-white text-primary px-4 py-2 rounded-xl text-[10px] font-bold active:scale-95 transition-transform shadow-sm"
+            >
+              Install Now
+            </button>
+          </div>
+        </div>
+      )}
+
       <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pb-[env(safe-area-inset-bottom)]">
         {/* Professional Bottom Nav */}
         <div className="bg-background border-t border-border shadow-2xl">
-          {canInstall && (
-            <div className="flex border-b border-border/30">
-              <button
-                onClick={install}
-                className="flex-1 flex items-center justify-center gap-1 py-1 bg-primary/5 text-primary text-[9px] font-bold active:bg-primary/10 transition-colors"
-              >
-                <Download className="w-3 h-3" /> Install App
-              </button>
-            </div>
-          )}
           <div className="flex items-center justify-between px-1 py-1">
             {navItems.map((item) => {
               const Icon = item.icon;

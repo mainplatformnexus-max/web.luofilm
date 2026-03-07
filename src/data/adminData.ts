@@ -173,8 +173,8 @@ export const mockSeries: SeriesItem[] = [
 ];
 
 export const mockMovies: MovieItem[] = [
-  { id: "m1", name: "Moonlight Fantasy", posterUrl: "", description: "A magical moonlit adventure", streamLink: "https://stream.example.com/m1", downloadLink: "", isPopular: true, isComingSoon: false, categories: ["Sweet Romance"], genre: "Fantasy, Romance", actors: "Yang Zi, Xiao Zhan", isTopTen: true, isHotDrama: true, isOriginal: true, isVip: true, isAgent: false, agentMarkedAt: null, rating: 9.1, displayOrder: 0, createdAt: "2025-12-05" },
-  { id: "m2", name: "Detective Mystery", posterUrl: "", description: "Unraveling the greatest case", streamLink: "https://stream.example.com/m2", downloadLink: "", isPopular: true, isComingSoon: false, categories: ["High Quality Dramas"], genre: "Mystery, Thriller", actors: "Bai Yu, Zhu Yilong", isTopTen: false, isHotDrama: true, isOriginal: false, isVip: false, isAgent: false, agentMarkedAt: null, rating: 8.7, displayOrder: 0, createdAt: "2025-11-20" },
+  { id: "m1", name: "Moonlight Fantasy", posterUrl: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop", description: "A magical moonlit adventure", streamLink: "https://stream.example.com/m1", downloadLink: "", isPopular: true, isComingSoon: false, categories: ["Sweet Romance"], genre: "Fantasy, Romance", actors: "Yang Zi, Xiao Zhan", isTopTen: true, isHotDrama: true, isOriginal: true, isVip: true, isAgent: false, agentMarkedAt: null, rating: 9.1, displayOrder: 0, createdAt: "2025-12-05" },
+  { id: "m2", name: "Detective Mystery", posterUrl: "https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?w=800&auto=format&fit=crop", description: "Unraveling the greatest case", streamLink: "https://stream.example.com/m2", downloadLink: "", isPopular: true, isComingSoon: false, categories: ["High Quality Dramas"], genre: "Mystery, Thriller", actors: "Bai Yu, Zhu Yilong", isTopTen: false, isHotDrama: true, isOriginal: false, isVip: false, isAgent: false, agentMarkedAt: null, rating: 8.7, displayOrder: 0, createdAt: "2025-11-20" },
 ];
 
 export const mockEpisodes: EpisodeItem[] = [
