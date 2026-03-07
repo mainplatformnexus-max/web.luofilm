@@ -342,7 +342,7 @@ const Watch = () => {
     if (drama) {
       const pageTitle = `${drama.title} - LUO FILM`;
       const description = drama.description || `Watch ${drama.title} on LUO FILM`;
-      const image = drama.image;
+      const image = drama.image.startsWith('http') ? drama.image : `https://luofilm.site${drama.image}`;
 
       document.title = pageTitle;
       updateMeta("og-title", "og:title", pageTitle);
