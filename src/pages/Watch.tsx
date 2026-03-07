@@ -340,17 +340,41 @@ const Watch = () => {
     };
 
     if (drama) {
-      const pageTitle = `${drama.title} - LUO FILM`;
-      const description = drama.description || `Watch ${drama.title} on LUO FILM`;
+      const isSeries = !!episodes.length || !!drama.episodes;
+      const episodeText = currentEpisode ? ` - Episode ${currentEpisode.episodeNumber}` : "";
+      const pageTitle = `${drama.title}${episodeText} | Watch on LUO FILM`;
+      const description = drama.description 
+        ? (drama.description.length > 150 ? drama.description.substring(0, 157) + "..." : drama.description)
+        : `Stream ${drama.title}${episodeText} in high quality on LUO FILM.`;
+      
       const image = drama.image.startsWith('http') ? drama.image : `https://luofilm.site${drama.image}`;
 
       document.title = pageTitle;
-      updateMeta("og-title", "og:title", pageTitle);
-      updateMeta("og-desc", "og:description", description);
-      updateMeta("og-image", "og:image", image);
-      updateMeta("twitter-title", "twitter:title", pageTitle);
-      updateMeta("twitter-desc", "twitter:description", description);
-      updateMeta("twitter-image", "twitter:image", image);
+      
+      // Update Meta Tags for SEO and Social Sharing
+      const updateOrAddMeta = (property: string, content: string, isName = false) => {
+        const attr = isName ? 'name' : 'property';
+        let el = document.querySelector(`meta[${attr}="${property}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attr, property);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      updateOrAddMeta("og:title", pageTitle);
+      updateOrAddMeta("og:description", description);
+      updateOrAddMeta("og:image", image);
+      updateOrAddMeta("og:url", window.location.href);
+      updateOrAddMeta("og:type", "video.other");
+      
+      updateOrAddMeta("twitter:title", pageTitle);
+      updateOrAddMeta("twitter:description", description);
+      updateOrAddMeta("twitter:image", image);
+      updateOrAddMeta("twitter:card", "summary_large_image");
+
+      updateOrAddMeta("description", description, true);
 
       let favicon = document.querySelector('link[rel="icon"]');
       if (favicon) favicon.setAttribute("href", image);
