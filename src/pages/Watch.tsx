@@ -13,6 +13,7 @@ import type { Drama } from "@/data/dramas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import SubscribeModal from "@/components/SubscribeModal";
+import DownloadModal from "@/components/DownloadModal";
 
 // ==================== SPORT WATCH ====================
 const SportWatch = () => {
@@ -192,6 +193,7 @@ const Watch = () => {
   const [showSubscribe, setShowSubscribe] = useState(false);
   const [subscribeMode, setSubscribeMode] = useState<"user" | "agent">("user");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userDoc, setUserDoc] = useState<UserItem | null>(null);
   const isSport = id?.startsWith("sport-");
@@ -489,34 +491,8 @@ const Watch = () => {
       setShowSubscribe(true);
       return;
     }
-    // Ensure filename reflects the actual content
-    const baseName = (drama.title || "Video").replace(/[/\\?%*:|"<>]/g, '-');
-    const fileName = (currentEpisode
-      ? `${baseName}_E${currentEpisode.episodeNumber}`
-      : baseName) + " vj. paul ug (www.luofilm.site).mp4";
-    
-    const downloadUrl = currentEpisode?.downloadLink || currentEpisode?.streamLink || (drama as any).downloadLink || drama.streamLink;
-    if (!downloadUrl) {
-      toast({ title: "No download available", variant: "destructive" });
-      return;
-    }
-
-    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadUrl)}&filename=${encodeURIComponent(fileName)}&download=1`;
-    
-    setIsDownloading(true);
-    toast({ title: "Starting Download", description: `Fetching ${fileName}...` });
-
-    const link = document.createElement("a");
-    link.href = backendUrl;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    
-    setTimeout(() => {
-      document.body.removeChild(link);
-      setIsDownloading(false);
-      toast({ title: "Download initiated", description: "Check your browser's download manager." });
-    }, 1000);
+    // Open the offline caching modal for subscribed users
+    setShowDownloadModal(true);
   };
 
   const handleWatchOnTV = () => {
@@ -809,6 +785,18 @@ const Watch = () => {
       </div>
 
       <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} mode={subscribeMode} />
+      
+      {drama && (
+        <DownloadModal
+          open={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          videoId={firebaseState?.firebaseId || id || "video"}
+          videoUrl={currentEpisode?.streamLink || currentEpisode?.downloadLink || drama.streamLink || drama.downloadLink || ""}
+          videoTitle={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
+          posterUrl={drama.image}
+          type={episodes.length > 0 ? "series" : "movie"}
+        />
+      )}
     </div>
   );
 };
