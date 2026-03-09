@@ -197,11 +197,12 @@ const Downloads = () => {
                     <p className="text-xs text-muted-foreground">{formatSize(video.size)}</p>
                   </div>
 
-                  {/* Play Button */}
-                  {video.status === 'completed' && (
+                  {/* Play Button - Show for completed and downloading */}
+                  {(video.status === 'completed' || video.status === 'downloading') && (
                     <button
-                      onClick={() => navigate(`/watch/${video.id}?offline=true`)}
+                      onClick={() => navigate(`/watch/${video.id}?offline=true`, { state: { isOffline: true, cacheId: video.id } })}
                       className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                      title={video.status === 'downloading' ? 'Watch while downloading' : 'Play'}
                     >
                       <Play className="w-4 h-4 ml-0.5" />
                     </button>

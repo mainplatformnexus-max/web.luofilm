@@ -113,6 +113,24 @@ class VideoCacheService {
     return video?.blob || null;
   }
 
+  async createBlobUrl(id: string): Promise<string> {
+    const blob = await this.getVideoBlob(id);
+    if (!blob) throw new Error('Video not found');
+    return URL.createObjectURL(blob);
+  }
+
+  async getVideoUrl(id: string): Promise<string | null> {
+    const video = await this.getVideo(id);
+    if (!video) return null;
+    
+    if (video.blob) {
+      return URL.createObjectURL(video.blob);
+    } else if (video.status === 'downloading' || video.status === 'completed') {
+      return video.url;
+    }
+    return null;
+  }
+
   async getAllVideos(): Promise<Omit<CachedVideo, 'blob'>[]> {
     await this.initPromise;
     return new Promise((resolve, reject) => {

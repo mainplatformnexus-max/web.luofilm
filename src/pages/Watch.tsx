@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import SubscribeModal from "@/components/SubscribeModal";
 import { useVideoCache } from "@/hooks/useVideoCache";
+import { videoCacheService } from "@/lib/videoCacheService";
 
 // ==================== SPORT WATCH ====================
 const SportWatch = () => {
@@ -199,6 +200,7 @@ const Watch = () => {
   const [cacheProgress, setCacheProgress] = useState(0);
   const isSport = id?.startsWith("sport-");
   const { downloadVideo } = useVideoCache();
+  const offlineState = location.state as { isOffline?: boolean; cacheId?: string } | null;
 
   const firebaseState = location.state as {
     firebaseId?: string;
@@ -236,12 +238,35 @@ const Watch = () => {
     setIsLoading(true);
   }, [id]);
 
-  // Load content from Firestore
+  // Load content from Firestore or Cache
   useEffect(() => {
     if (isSport || !id) return;
 
     const loadContent = async () => {
       setIsLoading(true);
+      
+      // Check if offline mode
+      if (offlineState?.isOffline && offlineState?.cacheId) {
+        const cached = await videoCacheService.getVideo(offlineState.cacheId);
+        if (cached) {
+          setDrama({
+            id: 9999,
+            title: cached.title,
+            image: cached.posterUrl || "/placeholder.svg",
+            streamLink: cached.url,
+            firebaseId: cached.id,
+            genre: "",
+            rating: 0,
+            description: "Cached video",
+            isVip: false,
+            isHotDrama: false,
+            isOriginal: false,
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       if (firebaseState?.firebaseId) {
         setDrama({
           id: Number(id) || 9999,
@@ -294,15 +319,17 @@ const Watch = () => {
 
     loadContent();
 
-    const unsub1 = subscribeMovies((movies) => {
-      setRecommended(movies.filter(m => !m.isAgent).slice(0, 7).map((m, i) => ({
-        id: i + 6000, title: m.name, image: m.posterUrl || "/placeholder.svg",
-        firebaseId: m.id, streamLink: m.streamLink, genre: m.genre,
-        rating: m.rating, description: m.description, downloadLink: m.downloadLink,
-      })));
-    });
-    return () => { unsub1(); };
-  }, [id, isSport]);
+    if (!offlineState?.isOffline) {
+      const unsub1 = subscribeMovies((movies) => {
+        setRecommended(movies.filter(m => !m.isAgent).slice(0, 7).map((m, i) => ({
+          id: i + 6000, title: m.name, image: m.posterUrl || "/placeholder.svg",
+          firebaseId: m.id, streamLink: m.streamLink, genre: m.genre,
+          rating: m.rating, description: m.description, downloadLink: m.downloadLink,
+        })));
+      });
+      return () => { unsub1(); };
+    }
+  }, [id, isSport, offlineState?.isOffline, offlineState?.cacheId]);
 
   // Subscribe to episodes for this content
   useEffect(() => {
@@ -629,27 +656,27 @@ const Watch = () => {
           </div>
 
           {/* Action bar */}
-          <div className="flex items-center gap-2 px-4 py-3">
-            <button onClick={handleShare} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-lg py-2 hover:from-blue-500/30 hover:to-blue-600/30 transition-all active:scale-95">
-              <Share2 className="w-4 h-4 text-blue-500" />
-              <span className="text-[8px] font-bold text-blue-400">Share</span>
+          <div className="flex items-center gap-1.5 px-4 py-2">
+            <button onClick={handleShare} className="flex-1 flex flex-col items-center gap-0.5 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded py-1.5 hover:from-blue-500/30 hover:to-blue-600/30 transition-all active:scale-95">
+              <Share2 className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-[7px] font-bold text-blue-400">Share</span>
             </button>
-            <button onClick={() => setShowComments(!showComments)} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 rounded-lg py-2 hover:from-purple-500/30 hover:to-purple-600/30 transition-all active:scale-95">
-              <MessageSquare className="w-4 h-4 text-purple-500" />
-              <span className="text-[8px] font-bold text-purple-400">{comments.length}</span>
+            <button onClick={() => setShowComments(!showComments)} className="flex-1 flex flex-col items-center gap-0.5 bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 rounded py-1.5 hover:from-purple-500/30 hover:to-purple-600/30 transition-all active:scale-95">
+              <MessageSquare className="w-3.5 h-3.5 text-purple-500" />
+              <span className="text-[7px] font-bold text-purple-400">{comments.length}</span>
             </button>
-            <button onClick={handleDownload} disabled={isDownloading} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 rounded-lg py-2 hover:from-orange-500/30 hover:to-orange-600/30 transition-all active:scale-95 disabled:opacity-40">
-              <Download className={`w-4 h-4 text-orange-500 ${isDownloading ? "animate-pulse" : ""}`} />
-              <span className="text-[8px] font-bold text-orange-400">{isDownloading ? "DL" : "Get"}</span>
+            <button onClick={handleDownload} disabled={isDownloading} className="flex-1 flex flex-col items-center gap-0.5 bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 rounded py-1.5 hover:from-orange-500/30 hover:to-orange-600/30 transition-all active:scale-95 disabled:opacity-40">
+              <Download className={`w-3.5 h-3.5 text-orange-500 ${isDownloading ? "animate-pulse" : ""}`} />
+              <span className="text-[7px] font-bold text-orange-400">{isDownloading ? "DL..." : "Download"}</span>
             </button>
-            <button onClick={handleCacheDownload} disabled={isCaching} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 rounded-lg py-2 hover:from-green-500/30 hover:to-green-600/30 transition-all active:scale-95 disabled:opacity-40 relative">
+            <button onClick={handleCacheDownload} disabled={isCaching} className="flex-1 flex flex-col items-center gap-0.5 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 rounded py-1.5 hover:from-green-500/30 hover:to-green-600/30 transition-all active:scale-95 disabled:opacity-40 relative">
               {isCaching && (
-                <div className="absolute inset-0 rounded-lg overflow-hidden">
+                <div className="absolute inset-0 rounded overflow-hidden">
                   <div className="h-full bg-green-500/10 transition-all" style={{ width: `${cacheProgress}%` }} />
                 </div>
               )}
-              <HardDrive className={`w-4 h-4 text-green-500 relative z-10 ${isCaching ? "animate-pulse" : ""}`} />
-              <span className="text-[8px] font-bold text-green-400 relative z-10">{isCaching ? `${cacheProgress}%` : "Save"}</span>
+              <HardDrive className={`w-3.5 h-3.5 text-green-500 relative z-10 ${isCaching ? "animate-pulse" : ""}`} />
+              <span className="text-[7px] font-bold text-green-400 relative z-10">{isCaching ? `${cacheProgress}%` : "Download"}</span>
             </button>
           </div>
 
