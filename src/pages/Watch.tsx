@@ -641,9 +641,17 @@ const Watch = () => {
 
           {/* Title & Meta */}
           <div className="px-4 py-3">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h1 className="text-foreground text-lg font-bold">{drama.title}</h1>
-              {drama.episodes && <span className="text-muted-foreground text-sm">{drama.episodes}</span>}
+            <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+              <div className="flex-1">
+                <h1 className="text-foreground text-lg font-bold">{drama.title}</h1>
+                {drama.episodes && <span className="text-muted-foreground text-sm">{drama.episodes}</span>}
+              </div>
+              {hasValidSubscription && (
+                <button onClick={handleDownload} className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors whitespace-nowrap">
+                  <Download className="w-3.5 h-3.5" />
+                  Add Download
+                </button>
+              )}
             </div>
             {drama.rating && (
               <div className="flex items-center gap-2 mb-2">
