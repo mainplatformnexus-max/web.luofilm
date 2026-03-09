@@ -481,7 +481,7 @@ const Watch = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDirectDownload = () => {
     if (!user) {
       toast({ title: "Login required", description: "Please login to download", variant: "destructive" });
       return;
@@ -491,9 +491,51 @@ const Watch = () => {
       setShowSubscribe(true);
       return;
     }
-    // Open the offline caching modal for subscribed users
+    // Direct browser download using backend proxy (original method)
+    const baseName = (drama.title || "Video").replace(/[/\\?%*:|"<>]/g, '-');
+    const fileName = (currentEpisode
+      ? `${baseName}_E${currentEpisode.episodeNumber}`
+      : baseName) + " vj. paul ug (www.luofilm.site).mp4";
+    
+    const downloadUrl = currentEpisode?.downloadLink || currentEpisode?.streamLink || (drama as any).downloadLink || drama.streamLink;
+    if (!downloadUrl) {
+      toast({ title: "No download available", variant: "destructive" });
+      return;
+    }
+
+    const backendUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(downloadUrl)}&filename=${encodeURIComponent(fileName)}&download=1`;
+    
+    setIsDownloading(true);
+    toast({ title: "Starting Download", description: `Fetching ${fileName}...` });
+
+    const link = document.createElement("a");
+    link.href = backendUrl;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+      setIsDownloading(false);
+      toast({ title: "Download initiated", description: "Check your browser's download manager." });
+    }, 1000);
+  };
+
+  const handleCacheDownload = () => {
+    if (!user) {
+      toast({ title: "Login required", description: "Please login to cache content", variant: "destructive" });
+      return;
+    }
+    if (!hasValidSubscription) {
+      toast({ title: "Subscription required", description: "Subscribe to cache content", variant: "destructive" });
+      setShowSubscribe(true);
+      return;
+    }
+    // Open the offline caching modal
     setShowDownloadModal(true);
   };
+
+  const handleDownload = handleDirectDownload;
 
   const handleWatchOnTV = () => {
     toast({ title: "Watch on TV", description: "Open the LUO FILM TV app and scan the QR code or enter the code shown on your TV" });
@@ -647,10 +689,16 @@ const Watch = () => {
                 {drama.episodes && <span className="text-muted-foreground text-sm">{drama.episodes}</span>}
               </div>
               {hasValidSubscription && (
-                <button onClick={handleDownload} className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors whitespace-nowrap">
-                  <Download className="w-3.5 h-3.5" />
-                  Add Download
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleDirectDownload} disabled={isDownloading} className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors whitespace-nowrap disabled:opacity-50">
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </button>
+                  <button onClick={handleCacheDownload} className="flex items-center gap-1.5 bg-secondary text-foreground px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-secondary/80 transition-colors whitespace-nowrap border border-border">
+                    <Download className="w-3.5 h-3.5" />
+                    Cache
+                  </button>
+                </div>
               )}
             </div>
             {drama.rating && (
