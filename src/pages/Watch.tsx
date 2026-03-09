@@ -196,6 +196,7 @@ const Watch = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [userDoc, setUserDoc] = useState<UserItem | null>(null);
   const [isCaching, setIsCaching] = useState(false);
+  const [cacheProgress, setCacheProgress] = useState(0);
   const isSport = id?.startsWith("sport-");
   const { downloadVideo } = useVideoCache();
 
@@ -540,6 +541,7 @@ const Watch = () => {
     }
 
     setIsCaching(true);
+    setCacheProgress(0);
     try {
       const contentId = firebaseState?.firebaseId || id || "";
       const videoTitle = currentEpisode 
@@ -551,13 +553,16 @@ const Watch = () => {
         videoUrl,
         videoTitle,
         drama.image,
-        episodes.length > 0 ? 'series' : 'movie'
+        episodes.length > 0 ? 'series' : 'movie',
+        'original',
+        (progress) => setCacheProgress(progress)
       );
-      toast({ title: "Success", description: "Video cached for offline viewing", variant: "default" });
+      toast({ title: "Cached!", description: "Watch offline anytime from Downloads", variant: "default" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to cache video", variant: "destructive" });
     } finally {
       setIsCaching(false);
+      setCacheProgress(0);
     }
   };
 
@@ -624,22 +629,27 @@ const Watch = () => {
           </div>
 
           {/* Action bar */}
-          <div className="flex items-center gap-1.5 px-4 py-2">
-            <button onClick={handleShare} className="flex-1 flex flex-col items-center gap-0.5 bg-card border border-border rounded-lg py-1.5 hover:bg-secondary transition-colors">
-              <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[9px] font-medium text-muted-foreground">Share</span>
+          <div className="flex items-center gap-2 px-4 py-3">
+            <button onClick={handleShare} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-lg py-2 hover:from-blue-500/30 hover:to-blue-600/30 transition-all active:scale-95">
+              <Share2 className="w-4 h-4 text-blue-500" />
+              <span className="text-[8px] font-bold text-blue-400">Share</span>
             </button>
-            <button onClick={() => setShowComments(!showComments)} className="flex-1 flex flex-col items-center gap-0.5 bg-card border border-border rounded-lg py-1.5 hover:bg-secondary transition-colors">
-              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[9px] font-medium text-muted-foreground">Comment</span>
+            <button onClick={() => setShowComments(!showComments)} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 rounded-lg py-2 hover:from-purple-500/30 hover:to-purple-600/30 transition-all active:scale-95">
+              <MessageSquare className="w-4 h-4 text-purple-500" />
+              <span className="text-[8px] font-bold text-purple-400">{comments.length}</span>
             </button>
-            <button onClick={handleDownload} disabled={isDownloading} className="flex-1 flex flex-col items-center gap-0.5 bg-card border border-border rounded-lg py-1.5 hover:bg-secondary transition-colors disabled:opacity-50">
-              <Download className={`w-3.5 h-3.5 text-muted-foreground ${isDownloading ? "animate-pulse" : ""}`} />
-              <span className="text-[9px] font-medium text-muted-foreground">{isDownloading ? "..." : "Download"}</span>
+            <button onClick={handleDownload} disabled={isDownloading} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-orange-500/20 to-orange-600/20 border border-orange-500/30 rounded-lg py-2 hover:from-orange-500/30 hover:to-orange-600/30 transition-all active:scale-95 disabled:opacity-40">
+              <Download className={`w-4 h-4 text-orange-500 ${isDownloading ? "animate-pulse" : ""}`} />
+              <span className="text-[8px] font-bold text-orange-400">{isDownloading ? "DL" : "Get"}</span>
             </button>
-            <button onClick={handleCacheDownload} disabled={isCaching} className="flex-1 flex flex-col items-center gap-0.5 bg-card border border-border rounded-lg py-1.5 hover:bg-secondary transition-colors disabled:opacity-50">
-              <HardDrive className={`w-3.5 h-3.5 text-muted-foreground ${isCaching ? "animate-pulse" : ""}`} />
-              <span className="text-[9px] font-medium text-muted-foreground">{isCaching ? "..." : "Cache"}</span>
+            <button onClick={handleCacheDownload} disabled={isCaching} className="flex-1 flex flex-col items-center gap-1 bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 rounded-lg py-2 hover:from-green-500/30 hover:to-green-600/30 transition-all active:scale-95 disabled:opacity-40 relative">
+              {isCaching && (
+                <div className="absolute inset-0 rounded-lg overflow-hidden">
+                  <div className="h-full bg-green-500/10 transition-all" style={{ width: `${cacheProgress}%` }} />
+                </div>
+              )}
+              <HardDrive className={`w-4 h-4 text-green-500 relative z-10 ${isCaching ? "animate-pulse" : ""}`} />
+              <span className="text-[8px] font-bold text-green-400 relative z-10">{isCaching ? `${cacheProgress}%` : "Save"}</span>
             </button>
           </div>
 

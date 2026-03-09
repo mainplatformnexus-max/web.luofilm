@@ -141,7 +141,7 @@ const Downloads = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {videos.map((video) => (
+            {videos.map((video: any) => (
               <div
                 key={video.id}
                 className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-colors"

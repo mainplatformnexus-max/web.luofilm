@@ -2,6 +2,7 @@ export interface CachedVideo {
   id: string;
   title: string;
   url: string;
+  blob?: Blob;
   posterUrl?: string;
   type: 'movie' | 'series' | 'tv' | 'sport';
   size: number;
@@ -34,7 +35,7 @@ class VideoCacheService {
 
   private async init() {
     return new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, 2);
+      const request = indexedDB.open(DB_NAME, 3);
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
@@ -54,7 +55,7 @@ class VideoCacheService {
     });
   }
 
-  async addVideo(video: CachedVideo): Promise<void> {
+  async addVideo(video: Omit<CachedVideo, 'blob'>): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction([VIDEOS_STORE], 'readwrite');
@@ -65,7 +66,7 @@ class VideoCacheService {
     });
   }
 
-  async updateVideo(video: CachedVideo): Promise<void> {
+  async updateVideo(video: Omit<CachedVideo, 'blob'>): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction([VIDEOS_STORE], 'readwrite');
@@ -73,6 +74,26 @@ class VideoCacheService {
       const request = store.put(video);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve();
+    });
+  }
+
+  async saveBlob(id: string, blob: Blob): Promise<void> {
+    await this.initPromise;
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction([VIDEOS_STORE], 'readwrite');
+      const store = tx.objectStore(VIDEOS_STORE);
+      const getRequest = store.get(id);
+      
+      getRequest.onsuccess = () => {
+        const video = getRequest.result;
+        if (video) {
+          video.blob = blob;
+          const putRequest = store.put(video);
+          putRequest.onerror = () => reject(putRequest.error);
+          putRequest.onsuccess = () => resolve();
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
@@ -87,14 +108,22 @@ class VideoCacheService {
     });
   }
 
-  async getAllVideos(): Promise<CachedVideo[]> {
+  async getVideoBlob(id: string): Promise<Blob | null> {
+    const video = await this.getVideo(id);
+    return video?.blob || null;
+  }
+
+  async getAllVideos(): Promise<Omit<CachedVideo, 'blob'>[]> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction([VIDEOS_STORE], 'readonly');
       const store = tx.objectStore(VIDEOS_STORE);
       const request = store.getAll();
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || []);
+      request.onsuccess = () => {
+        const results = request.result || [];
+        resolve(results.map(({ blob, ...rest }: any) => rest));
+      };
     });
   }
 
@@ -182,7 +211,7 @@ class VideoCacheService {
     const finalQuality = quality || '720p';
     await this.initPromise;
 
-    const video: CachedVideo = {
+    const video: Omit<CachedVideo, 'blob'> = {
       id: videoId,
       title,
       url,
@@ -199,12 +228,13 @@ class VideoCacheService {
     await this.addVideo(video);
 
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Network error');
+      const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!response.ok) throw new Error(`Network error: ${response.status}`);
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error('Cannot read response');
 
+      const chunks: Uint8Array[] = [];
       let receivedLength = 0;
       const totalLength = parseInt(response.headers.get('content-length') || '0', 10);
 
@@ -212,6 +242,7 @@ class VideoCacheService {
         const { done, value } = await reader.read();
         if (done) break;
 
+        chunks.push(value);
         receivedLength += value.length;
         const progress = totalLength ? Math.round((receivedLength / totalLength) * 100) : 0;
         
@@ -222,6 +253,9 @@ class VideoCacheService {
         await this.updateVideo(video);
         await this.trackDataUsage(value.length);
       }
+
+      const blob = new Blob(chunks, { type: 'video/mp4' });
+      await this.saveBlob(videoId, blob);
 
       video.status = 'completed';
       video.size = receivedLength;
