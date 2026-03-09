@@ -3,11 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
 import ActivityTrackerProvider from "./components/ActivityTrackerProvider";
-import GooglePhoneModal from "./components/GooglePhoneModal";
+import PhoneSetupModal from "./components/PhoneSetupModal";
 import Index from "./pages/Index";
 import Watch from "./pages/Watch";
 import Movies from "./pages/Movies";
@@ -23,18 +23,20 @@ import AdminDashboard from "./pages/AdminDashboard";
 import SectionPage from "./pages/SectionPage";
 import HowToUse from "./pages/HowToUse";
 import Sitemap from "./pages/Sitemap";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const location = useLocation();
+  const { needsPhoneSetup } = useAuth();
   const isAudiencePage = location.pathname.startsWith("/a/");
 
   return (
     <>
       <ActivityTrackerProvider />
-      <GooglePhonePrompt />
+      <PhoneSetupModal isOpen={needsPhoneSetup} />
       {!isAudiencePage && <Header />}
       <Routes>
         <Route path="/" element={<Index />} />
@@ -48,6 +50,7 @@ const AppLayout = () => {
         <Route path="/agent-watch/:id" element={<AgentWatch />} />
         <Route path="/a/:shareCode" element={<AudiencePage />} />
         <Route path="/shared/:shareCode" element={<SharedContent />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/section/:sectionId" element={<SectionPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/how-to-use" element={<HowToUse />} />

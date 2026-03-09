@@ -74,20 +74,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     
-    // Check if this Google user already has a Firestore user record
-    const allUsers = await getUsers();
-    const existingUser = allUsers.find(
-      u => u.email === result.user.email || (u as any).uid === result.user.uid
-    );
+    try {
+      // Check if this Google user already has a Firestore user record
+      const allUsers = await getUsers();
+      const existingUser = allUsers.find(
+        u => (u.email === result.user.email || (u as any).uid === result.user.uid) && u.phone
+      );
 
-    if (!existingUser) {
-      // New Google user - needs phone setup
+      if (!existingUser) {
+        // New Google user or no phone - needs phone setup
+        setNeedsPhoneSetup(true);
+        return { isNewUser: true };
+      }
+
+      // User exists with phone
+      setNeedsPhoneSetup(false);
+      return { isNewUser: false };
+    } catch (err) {
+      console.error("Error in loginWithGoogle:", err);
       setNeedsPhoneSetup(true);
       return { isNewUser: true };
     }
-
-    // Update lastActive
-    return { isNewUser: false };
   };
 
   const logout = async () => {

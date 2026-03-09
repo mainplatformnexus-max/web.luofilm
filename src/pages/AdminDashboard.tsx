@@ -224,7 +224,7 @@ const AdminDashboard = () => {
         {section === "latest-updates" && <LatestUpdatesSection updates={latestUpdates} search={search} />}
         {section === "activity" && <ActivitySection activities={activities.filter(a => a.userName !== "Admin" && a.userName !== ADMIN_EMAIL)} search={search} />}
         {section === "agents" && <AgentSection agents={agents} search={search} />}
-        {section === "users" && <UsersSection users={users} search={search} />}
+        {section === "users" && <UsersSection users={users.filter(u => u.phone)} usersWithoutPhone={users.filter(u => !u.phone)} search={search} />}
         {section === "wallet" && <WalletSection transactions={transactions} search={search} />}
       </main>
     </div>
@@ -952,12 +952,14 @@ const AgentSection = ({ agents, search }: { agents: AgentItem[]; search: string 
 };
 
 // ==================== USERS SECTION ====================
-const UsersSection = ({ users, search }: { users: UserItem[]; search: string }) => {
-  const [tab, setTab] = useState<"all" | "active" | "never">("all");
-  const filtered = [...users]
+const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserItem[]; usersWithoutPhone?: UserItem[]; search: string }) => {
+  const [tab, setTab] = useState<"all" | "active" | "never" | "incomplete">("all");
+  const allUsers = tab === "incomplete" ? usersWithoutPhone : users;
+  const filtered = [...allUsers]
     .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
     .filter(u => {
     const matchSearch = (u.name || "").toLowerCase().includes(search.toLowerCase()) || (u.phone || "").includes(search);
+    if (tab === "incomplete") return true; // Show all without phone
     if (tab === "active") return matchSearch && u.subscription !== null;
     if (tab === "never") return matchSearch && u.subscription === null;
     return matchSearch;
@@ -995,6 +997,7 @@ const UsersSection = ({ users, search }: { users: UserItem[]; search: string }) 
     { key: "all", label: `All Users (${users.length})` },
     { key: "active", label: `Active Subs (${users.filter(u => u.subscription).length})` },
     { key: "never", label: `Never Subscribed (${users.filter(u => !u.subscription).length})` },
+    { key: "incomplete", label: `Incomplete Profile (${usersWithoutPhone.length})` }
   ];
 
   return (
