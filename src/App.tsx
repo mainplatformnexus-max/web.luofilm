@@ -24,7 +24,9 @@ import SectionPage from "./pages/SectionPage";
 import HowToUse from "./pages/HowToUse";
 import Sitemap from "./pages/Sitemap";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { useNotificationTimer } from "./hooks/useNotificationTimer";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,7 @@ const AppLayout = () => {
   const location = useLocation();
   const { needsPhoneSetup } = useAuth();
   const isAudiencePage = location.pathname.startsWith("/a/");
+  useNotificationTimer();
 
   return (
     <>
@@ -42,6 +45,7 @@ const AppLayout = () => {
         <Route path="/" element={<Index />} />
         <Route path="/watch/:id" element={<Watch />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/series" element={<Series />} />
         <Route path="/tv-channel" element={<TVChannel />} />

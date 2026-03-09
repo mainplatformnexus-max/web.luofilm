@@ -20,7 +20,6 @@ const navLinks = [
   { label: "Live Sport", path: "/live-sport", icon: Trophy },
   { label: "Subscribe", path: "#subscribe", icon: Crown },
   { label: "Agent 1X", path: "#agent", icon: ShieldCheck },
-  { label: "Admin", path: "/admin", icon: Settings, adminOnly: true },
 ];
 
 const Header = () => {
@@ -66,7 +65,7 @@ const Header = () => {
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 mx-4 bg-secondary/60 rounded-full px-1.5 py-1 border border-border">
-            {navLinks.filter(link => !link.adminOnly || isAdmin).map((link) => {
+            {navLinks.map((link) => {
               const Icon = link.icon;
               const isAgent = link.path === "#agent";
               return (
@@ -114,6 +113,16 @@ const Header = () => {
                 <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg p-2 min-w-[140px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                   <p className="text-foreground text-xs font-medium px-2 py-1">{user.displayName || "User"}</p>
                   <p className="text-muted-foreground text-[10px] px-2 pb-1">{user.email}</p>
+                  <button onClick={() => navigate("/settings")}
+                    className="w-full text-left text-foreground text-xs px-2 py-1 rounded hover:bg-secondary transition-colors flex items-center gap-1.5">
+                    <Settings className="w-3 h-3" /> Settings
+                  </button>
+                  {isAdmin && (
+                    <button onClick={() => navigate("/admin")}
+                      className="w-full text-left text-primary text-xs px-2 py-1 rounded hover:bg-secondary transition-colors flex items-center gap-1.5">
+                      <Settings className="w-3 h-3" /> Admin
+                    </button>
+                  )}
                   <button onClick={handleLogout}
                     className="w-full text-left text-destructive text-xs px-2 py-1 rounded hover:bg-secondary transition-colors flex items-center gap-1.5">
                     <LogOut className="w-3 h-3" /> Logout
@@ -134,7 +143,7 @@ const Header = () => {
 
         {mobileOpen && (
           <nav className="lg:hidden border-t border-border bg-card px-4 py-3 space-y-1 animate-in slide-in-from-top-2 duration-200">
-            {navLinks.filter(link => !link.adminOnly || isAdmin).map((link) => {
+            {navLinks.map((link) => {
               const Icon = link.icon;
               return (
                 <button key={link.label} onClick={() => handleNavClick(link.path)}
@@ -148,6 +157,22 @@ const Header = () => {
                 </button>
               );
             })}
+            {user && (
+              <>
+                <button onClick={() => { handleNavClick("/settings"); setMobileOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary">
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+                {isAdmin && (
+                  <button onClick={() => { handleNavClick("/admin"); setMobileOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-primary hover:bg-secondary">
+                    <Settings className="w-4 h-4" />
+                    Admin
+                  </button>
+                )}
+              </>
+            )}
           </nav>
         )}
       </header>
