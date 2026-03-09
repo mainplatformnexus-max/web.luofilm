@@ -331,7 +331,7 @@ const Watch = () => {
     return unsub;
   }, [user]);
 
-  // Dynamic SEO implementation
+  // Dynamic SEO implementation - Update meta tags on mount and when content changes
   useEffect(() => {
     if (!drama) return;
 
@@ -346,58 +346,41 @@ const Watch = () => {
     // Update document title
     document.title = pageTitle;
     
-    // Helper to update or add meta tags
-    const updateOrAddMeta = (property: string, content: string, isName = false) => {
-      const attr = isName ? 'name' : 'property';
-      let el = document.querySelector(`meta[${attr}="${property}"]`);
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, property);
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', content);
-      
-      // Also update by ID if they exist (from index.html)
-      const idMap: Record<string, string> = {
-        "og:title": "og-title",
-        "og:description": "og-desc",
-        "og:image": "og-image",
-        "twitter:title": "twitter-title",
-        "twitter:description": "twitter-desc",
-        "twitter:image": "twitter-image"
-      };
-      
-      if (idMap[property]) {
-        const idEl = document.getElementById(idMap[property]);
-        if (idEl) idEl.setAttribute("content", content);
+    // Update or create meta tags by ID (these must exist in index.html)
+    const updateMetaById = (elementId: string, content: string) => {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.setAttribute("content", content);
       }
     };
 
-    updateOrAddMeta("og:title", pageTitle);
-    updateOrAddMeta("og:description", description);
-    updateOrAddMeta("og:image", image);
-    updateOrAddMeta("og:url", window.location.href);
-    updateOrAddMeta("og:type", "video.other");
+    // Update main meta tags
+    updateMetaById("og-title", pageTitle);
+    updateMetaById("og-desc", description);
+    updateMetaById("og-image", image);
+    updateMetaById("twitter-title", pageTitle);
+    updateMetaById("twitter-desc", description);
+    updateMetaById("twitter-image", image);
     
-    updateOrAddMeta("twitter:title", pageTitle);
-    updateOrAddMeta("twitter:description", description);
-    updateOrAddMeta("twitter:image", image);
-    updateOrAddMeta("twitter:card", "summary_large_image");
-
-    updateOrAddMeta("description", description, true);
-
-    let favicon = document.querySelector('link[rel="icon"]');
-    if (favicon) favicon.setAttribute("href", image);
+    // Also update via query selector for backup
+    document.querySelectorAll('meta[property="og:title"]').forEach(el => el.setAttribute("content", pageTitle));
+    document.querySelectorAll('meta[property="og:description"]').forEach(el => el.setAttribute("content", description));
+    document.querySelectorAll('meta[property="og:image"]').forEach(el => el.setAttribute("content", image));
+    document.querySelectorAll('meta[property="og:url"]').forEach(el => el.setAttribute("content", window.location.href));
+    document.querySelectorAll('meta[property="og:type"]').forEach(el => el.setAttribute("content", "video.other"));
+    
+    document.querySelectorAll('meta[name="twitter:title"]').forEach(el => el.setAttribute("content", pageTitle));
+    document.querySelectorAll('meta[name="twitter:description"]').forEach(el => el.setAttribute("content", description));
+    document.querySelectorAll('meta[name="twitter:image"]').forEach(el => el.setAttribute("content", image));
+    document.querySelectorAll('meta[name="twitter:card"]').forEach(el => el.setAttribute("content", "summary_large_image"));
+    document.querySelectorAll('meta[name="description"]').forEach(el => el.setAttribute("content", description));
 
     return () => {
       document.title = "LUO FILM";
-      // Reset to defaults
-      updateOrAddMeta("og:title", "LUO FILM");
-      updateOrAddMeta("og:description", "Watch and Download Luo Translated Movies, Live TV, and Sports on LUO FILM.");
-      updateOrAddMeta("og:image", "https://luofilm.site/logo.png");
-      
-      let fav = document.querySelector('link[rel="icon"]');
-      if (fav) fav.setAttribute("href", "/logo.png");
+      // Reset to defaults on unmount
+      updateMetaById("og-title", "LUO FILM");
+      updateMetaById("og-desc", "Watch and Download Luo Translated Movies, Live TV, and Sports on LUO FILM.");
+      updateMetaById("og-image", "https://luofilm.site/logo.png");
     };
   }, [drama, currentEpisode]);
 

@@ -76,12 +76,4 @@ const App = () => (
   </QueryClientProvider>
 );
 
-// Wrapper to show Google phone prompt
-import { useAuth } from "./contexts/AuthContext";
-
-const GooglePhonePrompt = () => {
-  const { needsPhoneSetup, setNeedsPhoneSetup } = useAuth();
-  return <GooglePhoneModal open={needsPhoneSetup} onClose={() => setNeedsPhoneSetup(false)} />;
-};
-
 export default App;
