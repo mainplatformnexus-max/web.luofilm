@@ -41,6 +41,7 @@ const AppLayout = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/watch/:id" element={<Watch />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/series" element={<Series />} />
         <Route path="/tv-channel" element={<TVChannel />} />
@@ -50,7 +51,6 @@ const AppLayout = () => {
         <Route path="/agent-watch/:id" element={<AgentWatch />} />
         <Route path="/a/:shareCode" element={<AudiencePage />} />
         <Route path="/shared/:shareCode" element={<SharedContent />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/section/:sectionId" element={<SectionPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/how-to-use" element={<HowToUse />} />

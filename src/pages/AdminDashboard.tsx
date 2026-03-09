@@ -764,32 +764,34 @@ const ActivitySection = ({ activities, search }: { activities: UserActivity[]; s
     .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))
     .filter(a => a.userName.toLowerCase().includes(search.toLowerCase()) || a.details.toLowerCase().includes(search.toLowerCase()));
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <table className="w-full text-xs">
-        <thead><tr className="border-b border-border bg-secondary/50">
-          <th className="text-left p-3 text-muted-foreground font-medium">User</th>
-          <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Phone</th>
-          <th className="text-center p-3 text-muted-foreground font-medium">Action</th>
-          <th className="text-left p-3 text-muted-foreground font-medium">Details</th>
-          <th className="text-left p-3 text-muted-foreground font-medium hidden lg:table-cell">Page</th>
-          <th className="text-left p-3 text-muted-foreground font-medium hidden sm:table-cell">Time</th>
-          <th className="text-left p-3 text-muted-foreground font-medium hidden lg:table-cell">Device</th>
-        </tr></thead>
-        <tbody>
-          {filtered.map(a => (
-            <tr key={a.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-              <td className="p-3 font-medium text-foreground">{a.userName}</td>
-              <td className="p-3 text-muted-foreground hidden md:table-cell">{a.userPhone}</td>
-              <td className="p-3 text-center"><Badge variant="outline" className="text-[10px] capitalize">{a.action}</Badge></td>
-              <td className="p-3 text-muted-foreground">{a.details}</td>
-              <td className="p-3 text-muted-foreground hidden lg:table-cell text-[10px]">{a.page}</td>
-              <td className="p-3 text-muted-foreground hidden sm:table-cell text-[10px]">{a.timestamp}</td>
-              <td className="p-3 text-muted-foreground hidden lg:table-cell text-[10px]">{a.device}</td>
-            </tr>
-          ))}
-          {filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground text-xs">No activities recorded yet.</td></tr>}
-        </tbody>
-      </table>
+    <div className="w-full">
+      <div className="bg-card border border-border rounded-xl overflow-x-auto">
+        <table className="w-full text-xs whitespace-nowrap">
+          <thead><tr className="border-b border-border bg-secondary/50">
+            <th className="text-left p-3 text-muted-foreground font-medium">User</th>
+            <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Phone</th>
+            <th className="text-center p-3 text-muted-foreground font-medium">Action</th>
+            <th className="text-left p-3 text-muted-foreground font-medium">Details</th>
+            <th className="text-left p-3 text-muted-foreground font-medium hidden lg:table-cell">Page</th>
+            <th className="text-left p-3 text-muted-foreground font-medium hidden sm:table-cell">Time</th>
+            <th className="text-left p-3 text-muted-foreground font-medium hidden lg:table-cell">Device</th>
+          </tr></thead>
+          <tbody>
+            {filtered.map(a => (
+              <tr key={a.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                <td className="p-3 font-medium text-foreground">{a.userName}</td>
+                <td className="p-3 text-muted-foreground hidden md:table-cell">{a.userPhone}</td>
+                <td className="p-3 text-center"><Badge variant="outline" className="text-[10px] capitalize">{a.action}</Badge></td>
+                <td className="p-3 text-muted-foreground text-[11px] max-w-xs truncate">{a.details}</td>
+                <td className="p-3 text-muted-foreground hidden lg:table-cell text-[10px]">{a.page}</td>
+                <td className="p-3 text-muted-foreground hidden sm:table-cell text-[10px]">{a.timestamp}</td>
+                <td className="p-3 text-muted-foreground hidden lg:table-cell text-[10px]">{a.device}</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground text-xs">No activities recorded yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
@@ -1025,6 +1027,19 @@ const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserIt
                   <Badge className={`text-[9px] border-0 ${u.status === "active" ? "bg-primary/20 text-primary" : u.status === "blocked" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>{u.status}</Badge>
                 </td>
                 <td className="p-3 text-center hidden sm:table-cell text-[10px]">{u.subscription || <span className="text-muted-foreground">None</span>}</td>
+                <td className="p-3 text-center hidden sm:table-cell text-[10px]">
+                  <div className="text-[10px]">
+                    {u.subscriptionExpiry && new Date(u.subscriptionExpiry).getTime() > Date.now() ? (
+                      <>
+                        <span className="text-primary font-medium">{u.subscription}</span>
+                        <br />
+                        <span className="text-muted-foreground">Exp: {u.subscriptionExpiry}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">None</span>
+                    )}
+                  </div>
+                </td>
                 <td className="p-3 text-right">
                   <div className="flex gap-0.5 justify-end flex-wrap">
                     {u.status !== "blocked" && <button onClick={() => setActionModal({ type: "block", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"><Ban className="w-3 h-3" /></button>}
