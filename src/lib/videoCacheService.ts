@@ -176,9 +176,10 @@ class VideoCacheService {
     title: string,
     posterUrl?: string,
     type: 'movie' | 'series' | 'tv' | 'sport' = 'movie',
-    quality: 'original' | '720p' | '480p' | '360p' = '720p',
-    onProgress?: (progress: number, downloadedBytes: number) => void
+    quality?: 'original' | '720p' | '480p' | '360p',
+    onProgress?: (progress: number, downloadedBytes?: number) => void
   ): Promise<void> {
+    const finalQuality = quality || '720p';
     await this.initPromise;
 
     const video: CachedVideo = {
@@ -190,7 +191,7 @@ class VideoCacheService {
       size: 0,
       progress: 0,
       status: 'downloading',
-      quality,
+      quality: finalQuality,
       createdAt: Date.now(),
       expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
     };
@@ -216,7 +217,7 @@ class VideoCacheService {
         
         video.progress = progress;
         video.size = receivedLength;
-        onProgress?.(progress, receivedLength);
+        if (onProgress) onProgress(progress, receivedLength);
 
         await this.updateVideo(video);
         await this.trackDataUsage(value.length);

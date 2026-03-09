@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Play, MessageSquare, Clock, Share2, Monitor, Smartphone, ChevronRight, Star, ArrowLeft, Download, Send, Trash2, Lock } from "lucide-react";
+import { Play, MessageSquare, Clock, Share2, Monitor, Smartphone, ChevronRight, Star, ArrowLeft, Download, Send, Trash2, Lock, HardDrive } from "lucide-react";
 import { subscribeMovies, subscribeSeries, getEpisodesBySeries, subscribeComments, addComment, deleteComment, addWatchLater, subscribeWatchLater, deleteWatchLater, subscribeEpisodes, getUserByUid } from "@/lib/firebaseServices";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -13,7 +13,7 @@ import type { Drama } from "@/data/dramas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import SubscribeModal from "@/components/SubscribeModal";
-import DownloadModal from "@/components/DownloadModal";
+import { useVideoCache } from "@/hooks/useVideoCache";
 
 // ==================== SPORT WATCH ====================
 const SportWatch = () => {
@@ -193,10 +193,11 @@ const Watch = () => {
   const [showSubscribe, setShowSubscribe] = useState(false);
   const [subscribeMode, setSubscribeMode] = useState<"user" | "agent">("user");
   const [isDownloading, setIsDownloading] = useState(false);
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userDoc, setUserDoc] = useState<UserItem | null>(null);
+  const [isCaching, setIsCaching] = useState(false);
   const isSport = id?.startsWith("sport-");
+  const { downloadVideo } = useVideoCache();
 
   const firebaseState = location.state as {
     firebaseId?: string;
@@ -521,7 +522,7 @@ const Watch = () => {
     }, 1000);
   };
 
-  const handleCacheDownload = () => {
+  const handleCacheDownload = async () => {
     if (!user) {
       toast({ title: "Login required", description: "Please login to cache content", variant: "destructive" });
       return;
@@ -531,8 +532,33 @@ const Watch = () => {
       setShowSubscribe(true);
       return;
     }
-    // Open the offline caching modal
-    setShowDownloadModal(true);
+    
+    const videoUrl = currentEpisode?.streamLink || currentEpisode?.downloadLink || (drama as any).downloadLink || drama.streamLink;
+    if (!videoUrl) {
+      toast({ title: "Error", description: "No video available to cache", variant: "destructive" });
+      return;
+    }
+
+    setIsCaching(true);
+    try {
+      const contentId = firebaseState?.firebaseId || id || "";
+      const videoTitle = currentEpisode 
+        ? `${drama.title} - Episode ${currentEpisode.episodeNumber}`
+        : drama.title;
+      
+      await downloadVideo(
+        contentId,
+        videoUrl,
+        videoTitle,
+        drama.image,
+        episodes.length > 0 ? 'series' : 'movie'
+      );
+      toast({ title: "Success", description: "Video cached for offline viewing", variant: "default" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to cache video", variant: "destructive" });
+    } finally {
+      setIsCaching(false);
+    }
   };
 
   const handleDownload = handleDirectDownload;
@@ -605,11 +631,15 @@ const Watch = () => {
             </button>
             <button onClick={() => setShowComments(!showComments)} className="flex-1 flex flex-col items-center gap-0.5 bg-card border border-border rounded-lg py-1.5 hover:bg-secondary transition-colors">
               <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[9px] font-medium text-muted-foreground">{comments.length} Comments</span>
+              <span className="text-[9px] font-medium text-muted-foreground">Comment</span>
             </button>
-            <button onClick={handleDownload} disabled={isDownloading} className="flex-1 flex flex-col items-center gap-0.5 bg-gradient-to-br from-primary to-primary/70 border border-primary/30 rounded-lg py-1.5 hover:shadow-[0_2px_12px_hsl(135_100%_37%/0.4)] transition-all active:scale-95 disabled:opacity-50">
-              <Download className={`w-3.5 h-3.5 text-primary-foreground ${isDownloading ? "animate-pulse" : ""}`} />
-              <span className="text-[9px] font-bold text-primary-foreground">{isDownloading ? "Downloading..." : "Download"}</span>
+            <button onClick={handleDownload} disabled={isDownloading} className="flex-1 flex flex-col items-center gap-0.5 bg-card border border-border rounded-lg py-1.5 hover:bg-secondary transition-colors disabled:opacity-50">
+              <Download className={`w-3.5 h-3.5 text-muted-foreground ${isDownloading ? "animate-pulse" : ""}`} />
+              <span className="text-[9px] font-medium text-muted-foreground">{isDownloading ? "..." : "Download"}</span>
+            </button>
+            <button onClick={handleCacheDownload} disabled={isCaching} className="flex-1 flex flex-col items-center gap-0.5 bg-card border border-border rounded-lg py-1.5 hover:bg-secondary transition-colors disabled:opacity-50">
+              <HardDrive className={`w-3.5 h-3.5 text-muted-foreground ${isCaching ? "animate-pulse" : ""}`} />
+              <span className="text-[9px] font-medium text-muted-foreground">{isCaching ? "..." : "Cache"}</span>
             </button>
           </div>
 
@@ -688,19 +718,7 @@ const Watch = () => {
                 <h1 className="text-foreground text-lg font-bold">{drama.title}</h1>
                 {drama.episodes && <span className="text-muted-foreground text-sm">{drama.episodes}</span>}
               </div>
-              {hasValidSubscription && (
-                <div className="flex items-center gap-2">
-                  <button onClick={handleDirectDownload} disabled={isDownloading} className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors whitespace-nowrap disabled:opacity-50">
-                    <Download className="w-3.5 h-3.5" />
-                    Download
-                  </button>
-                  <button onClick={handleCacheDownload} className="flex items-center gap-1.5 bg-secondary text-foreground px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-secondary/80 transition-colors whitespace-nowrap border border-border">
-                    <Download className="w-3.5 h-3.5" />
-                    Cache
-                  </button>
-                </div>
-              )}
-            </div>
+              </div>
             {drama.rating && (
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-1">
@@ -841,18 +859,6 @@ const Watch = () => {
       </div>
 
       <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} mode={subscribeMode} />
-      
-      {drama && (
-        <DownloadModal
-          open={showDownloadModal}
-          onClose={() => setShowDownloadModal(false)}
-          videoId={firebaseState?.firebaseId || id || "video"}
-          videoUrl={currentEpisode?.streamLink || currentEpisode?.downloadLink || drama.streamLink || drama.downloadLink || ""}
-          videoTitle={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
-          posterUrl={drama.image}
-          type={episodes.length > 0 ? "series" : "movie"}
-        />
-      )}
     </div>
   );
 };

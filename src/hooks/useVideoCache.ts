@@ -24,10 +24,11 @@ export const useVideoCache = () => {
       title: string,
       posterUrl?: string,
       type: 'movie' | 'series' | 'tv' | 'sport' = 'movie',
+      quality: 'original' | '720p' | '480p' | '360p' = '720p',
       onProgress?: (progress: number) => void
     ) => {
       try {
-        await videoCacheService.downloadVideo(videoId, url, title, posterUrl, type, onProgress);
+        await videoCacheService.downloadVideo(videoId, url, title, posterUrl, type, quality, onProgress);
         await loadVideos();
       } catch (error) {
         console.error('Download failed:', error);
