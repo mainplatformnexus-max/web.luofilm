@@ -7,6 +7,7 @@ import type { EpisodeItem, CommentItem, WatchLaterItem, UserItem } from "@/data/
 import MuxPlayer from "@mux/mux-player-react";
 import SportPlayer from "@/components/SportPlayer";
 import ArtPlayerComponent from "@/components/ArtPlayerComponent";
+import OfflineVideoPlayerComponent from "@/components/OfflineVideoPlayerComponent";
 import { useState, useEffect, useCallback } from "react";
 import LogoLoader from "@/components/LogoLoader";
 import type { Drama } from "@/data/dramas";
@@ -15,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import SubscribeModal from "@/components/SubscribeModal";
 import { useVideoCache } from "@/hooks/useVideoCache";
 import { videoCacheService } from "@/lib/videoCacheService";
+import { getPlaybackUrl } from "@/lib/offlinePlayerUtils";
 
 // ==================== SPORT WATCH ====================
 const SportWatch = () => {
@@ -198,6 +200,8 @@ const Watch = () => {
   const [userDoc, setUserDoc] = useState<UserItem | null>(null);
   const [isCaching, setIsCaching] = useState(false);
   const [cacheProgress, setCacheProgress] = useState(0);
+  const [playingOffline, setPlayingOffline] = useState(false);
+  const [cachedVideoUrl, setCachedVideoUrl] = useState<string | null>(null);
   const isSport = id?.startsWith("sport-");
   const { downloadVideo } = useVideoCache();
   const offlineState = location.state as { isOffline?: boolean; cacheId?: string } | null;
@@ -262,8 +266,22 @@ const Watch = () => {
             isHotDrama: false,
             isOriginal: false,
           });
+          setPlayingOffline(true);
           setIsLoading(false);
           return;
+        }
+      }
+
+      // Check for cached video for current content
+      if (drama?.firebaseId || id) {
+        const videoId = drama?.firebaseId || id;
+        const playbackInfo = await getPlaybackUrl({
+          videoId,
+          onlineUrl: drama?.streamLink,
+        });
+        if (playbackInfo.isCached) {
+          setCachedVideoUrl(playbackInfo.url);
+          setPlayingOffline(true);
         }
       }
 
@@ -636,12 +654,25 @@ const Watch = () => {
                 </div>
               </div>
             ) : (currentEpisode?.streamLink || drama.streamLink) ? (
-              <ArtPlayerComponent
-                key={currentEpisode?.streamLink || drama.streamLink || ""}
-                src={currentEpisode?.streamLink || drama.streamLink || ""}
-                poster={drama.image}
-                title={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
-              />
+              playingOffline && cachedVideoUrl ? (
+                <div className="relative">
+                  <OfflineVideoPlayerComponent
+                    key={`offline-${currentEpisode?.streamLink || drama.streamLink}`}
+                    videoId={currentEpisode?.id || drama.firebaseId || id || ""}
+                    onlineUrl={currentEpisode?.streamLink || drama.streamLink || ""}
+                    posterUrl={drama.image}
+                    title={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
+                    onOfflineDetected={setPlayingOffline}
+                  />
+                </div>
+              ) : (
+                <ArtPlayerComponent
+                  key={currentEpisode?.streamLink || drama.streamLink || ""}
+                  src={currentEpisode?.streamLink || drama.streamLink || ""}
+                  poster={drama.image}
+                  title={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
+                />
+              )
             ) : (
               <>
                 <img src={drama.image} alt={drama.title} className="w-full h-full object-cover" />

@@ -1,110 +1,90 @@
-# Luo Film
+# LUO FILM Project Documentation
 
-A React-based streaming platform frontend built with Vite, TypeScript, and Firebase.
+## Recent Updates (Latest Session)
 
-## Project Structure
+### 1. Google Analytics Integration
+- **Added**: Google Analytics tag (gtag.js) to `index.html`
+- **Tracking ID**: G-D6XSJWP6NF
+- **Purpose**: Track user analytics and engagement on the platform
 
-- `src/` - All frontend source code
-  - `pages/` - Page components (Index, Watch, Movies, Series, TVChannel, LiveSport, Agent, AgentWatch, AudiencePage, SharedContent, AdminDashboard, SectionPage, HowToUse, Profile, Settings, Downloads, NotFound)
-  - `components/` - Reusable UI components
-  - `contexts/` - React context providers (AuthContext)
-  - `hooks/` - Custom React hooks (useNotificationTimer, useVideoCache)
-  - `lib/` - Firebase config, services, notificationService, videoCacheService
-  - `data/` - Static data files
-- `public/` - Static assets
+### 2. Offline Video Playback System
+Implemented a complete offline video caching and playback solution:
 
-## Tech Stack
+#### New Files Created:
+1. **`src/hooks/useOfflineVideoPlayer.ts`**
+   - Custom React hook for managing offline video playback state
+   - Checks cached video availability
+   - Falls back to online URL if no cached video exists
+   - Provides refetch capability
 
-- **Frontend**: React 18, TypeScript, Vite 5
-- **Routing**: React Router DOM v6
-- **Auth & Database**: Firebase (Auth + Firestore)
-- **UI**: Tailwind CSS, shadcn/ui (Radix UI), lucide-react
-- **State/Data**: TanStack React Query v5
-- **Video**: ArtPlayer, HLS.js, Shaka Player
-- **PWA**: vite-plugin-pwa
-- **Forms**: react-hook-form + zod
-- **Caching**: IndexedDB for offline video storage
+2. **`src/lib/offlinePlayerUtils.ts`**
+   - Utility functions for offline video management:
+     - `getPlaybackUrl()` - Determines best video source (cached or online)
+     - `cacheVideoForOffline()` - Downloads and caches videos for offline
+     - `isCachedAndReady()` - Checks if video is cached and ready
+     - `getCachedVideoInfo()` - Retrieves cached video metadata
+     - `removeOfflineCache()` - Deletes cached videos
 
-## Running the App
+3. **`src/components/OfflineVideoPlayerComponent.tsx`**
+   - Advanced video player component with offline support
+   - Features:
+     - Automatic detection of cached vs online videos
+     - Fallback to online streaming if cache unavailable
+     - Visual indicator ("Playing Offline" badge) when using cached content
+     - Supports HLS and standard MP4 formats via Plyr
+     - Proper cleanup of HLS and player instances
 
-The workflow "Start application" runs `npm run dev` on port 5000.
+#### Modified Files:
+1. **`src/pages/Watch.tsx`**
+   - Added state for tracking offline playback (`playingOffline`, `cachedVideoUrl`)
+   - Integrated offline video checking on content load
+   - Updated player rendering to use `OfflineVideoPlayerComponent` when cached video available
+   - Falls back to `ArtPlayerComponent` for online streaming
+   - Imported new utility functions and components
 
-## Firebase Project
+## How It Works
 
-Project ID: `luo-film`
-Auth domain: `luo-film.firebaseapp.com`
+### Offline Video Playback Flow:
+1. **Load Content**: When a drama/movie loads, the system checks if a cached version exists
+2. **Check Cache**: Uses `getPlaybackUrl()` to determine video source:
+   - If cached and complete → uses blob URL for offline playback
+   - If not cached → uses online streaming URL
+3. **Player Selection**: 
+   - `OfflineVideoPlayerComponent` → for cached videos (full offline support)
+   - `ArtPlayerComponent` → for online streaming
+4. **Visual Feedback**: Shows "Playing Offline" badge when cached video is active
+5. **Fallback**: If cached video fails to load, automatically falls back to online
 
-## Recent Updates (March 2026)
+### Key Features:
+- **No internet required for cached videos**: Uses browser IndexedDB and blob URLs
+- **Seamless fallback**: Automatically switches to online if offline playback fails
+- **HLS support**: Handles both HLS (.m3u8) and MP4 video formats
+- **Quality controls**: Supports video quality selection via Plyr player
+- **Proper resource cleanup**: Destroys HLS instances and players on unmount
 
-### Navigation Updates
-- **Settings in Main Navigation**: Added Settings link to navigation menu near Agent 1X (both desktop and mobile)
-- **Downloads in Navigation**: Added Downloads to mobile bottom navigation
-- **Downloads Button**: Added Downloads button to header for quick access
-- Enhanced navigation with Zap icon for Settings
+## Technology Stack
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
+- **Video Players**: Plyr, Hls.js, Shaka Player, ArtPlayer, Mux Player
+- **Storage**: IndexedDB (via VideoCacheService)
+- **Analytics**: Google Analytics (gtag.js)
+- **PWA**: Vite PWA Plugin with offline support
 
-### Settings Page
-- Full-featured Settings page (`src/pages/Settings.tsx`)
-- Account details, phone number, last login, member status
-- Notification preferences for new content, promotions, downloads, subscription reminders
-- Security settings with password change option
-- Data & Network settings
+## Database (IndexedDB)
+- **Database Name**: `LuoFilmCache`
+- **Stores**:
+  - `videos`: Stores cached video metadata and blob data
+  - `dataUsage`: Tracks data usage statistics
+- **Video Expiration**: 30 days (configurable)
 
-### Data Saver Mode
-- Toggle in Settings page under "Data & Network"
-- Videos play at 480p or lower when enabled
-- Perfect for mobile users on limited data
-- Persistent setting stored in localStorage
-
-### Downloads & Offline Caching
-- **Downloads Page** (`src/pages/Downloads.tsx`):
-  - Full download manager interface
-  - Shows download progress for in-progress downloads
-  - Displays cache storage usage (up to 1GB per user)
-  - One-click delete for cached videos
-  - Quick-play button for completed downloads
-  - Status indicators: downloading, completed, paused, error
-
-- **Video Cache Service** (`src/lib/videoCacheService.ts`):
-  - IndexedDB-based persistent storage
-  - Download videos for offline viewing
-  - Automatic 30-day expiration for cached videos
-  - Progress tracking during download
-  - Cache size management
-
-- **useVideoCache Hook** (`src/hooks/useVideoCache.ts`):
-  - React hook for managing cached videos
-  - Load, download, delete, and track cache size
-  - Integration-ready for video player components
-
-### Browser Notifications System
-- **Real browser notifications** using Notification API (like YouTube/TikTok)
-- **Content Notifications**: Shows when admin uploads new content (movies, series, episodes, news, channels, 18+)
-- **User Engagement**: 10-minute stay notification offering 2 hours free access
-- Functions in `src/lib/notificationService.ts`:
-  - `requestNotificationPermission()` - Request browser permission
-  - `showNotification()` - Generic notification
-  - `showContentNotification()` - For content uploads
-  - `showFreeSubscriptionNotification()` - For user engagement
-- **10-Minute Timer** (`src/hooks/useNotificationTimer.ts`):
-  - Automatic notification after 10 minutes on site
-  - Once per day per user (localStorage tracking)
-  - Works on web and PWA app
-
-### Mobile Navigation Enhancement
-- Larger bottom navigation (icons 36px, padding py-2)
-- Better tap targets and spacing
-- Increased spacer height (h-20) for content clearance
-- Downloads and Account buttons easily accessible
-
-### TV Channel
-- **FREE for all users** - no subscription required
-- Live TV channels accessible without premium membership
+## Testing the Feature
+1. Download a video to cache using the "Download" button
+2. Disable internet or go offline
+3. Reload the page - the player should automatically use the cached video
+4. Look for the "Playing Offline" badge in the player UI
+5. Video should play without any internet connection
 
 ## Notes
-
-- Frontend-only app — no Express backend
-- Firebase credentials hardcoded in `src/lib/firebase.ts`
-- Port configured to 5000 for Replit preview compatibility
-- Notifications work like YouTube — real browser notifications on desktop and mobile
-- Offline caching works on both web and PWA installed app
-- Data saver mode adapts video quality to connection speed
+- Cached videos are stored in browser's IndexedDB (not affected by cache clearing in most cases)
+- Each video can have multiple quality options (original, 720p, 480p, 360p)
+- Data usage is tracked per day, week, and month
+- All player controls work normally with cached videos
