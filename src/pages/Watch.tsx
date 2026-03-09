@@ -8,6 +8,9 @@ import MuxPlayer from "@mux/mux-player-react";
 import SportPlayer from "@/components/SportPlayer";
 import ArtPlayerComponent from "@/components/ArtPlayerComponent";
 import OfflineVideoPlayerComponent from "@/components/OfflineVideoPlayerComponent";
+import Badge18Plus from "@/components/Badge18Plus";
+import DownloadBadge from "@/components/DownloadBadge";
+import QualityBadge from "@/components/QualityBadge";
 import { useState, useEffect, useCallback } from "react";
 import LogoLoader from "@/components/LogoLoader";
 import type { Drama } from "@/data/dramas";
@@ -17,6 +20,8 @@ import SubscribeModal from "@/components/SubscribeModal";
 import { useVideoCache } from "@/hooks/useVideoCache";
 import { videoCacheService } from "@/lib/videoCacheService";
 import { getPlaybackUrl } from "@/lib/offlinePlayerUtils";
+import { autoCacheService } from "@/lib/autoCacheService";
+import { networkDetection } from "@/lib/networkDetection";
 
 // ==================== SPORT WATCH ====================
 const SportWatch = () => {
@@ -202,6 +207,7 @@ const Watch = () => {
   const [cacheProgress, setCacheProgress] = useState(0);
   const [playingOffline, setPlayingOffline] = useState(false);
   const [cachedVideoUrl, setCachedVideoUrl] = useState<string | null>(null);
+  const [networkStatus, setNetworkStatus] = useState(networkDetection.getNetworkStatus());
   const isSport = id?.startsWith("sport-");
   const { downloadVideo } = useVideoCache();
   const offlineState = location.state as { isOffline?: boolean; cacheId?: string } | null;
@@ -231,6 +237,14 @@ const Watch = () => {
   }, [user]);
 
   const hasSubscription = checkUserSubscription(userDoc);
+
+  // Monitor network status
+  useEffect(() => {
+    const unsubscribe = networkDetection.subscribe((status) => {
+      setNetworkStatus(status);
+    });
+    return unsubscribe;
+  }, []);
 
   // Reset states when id changes (fix: player not changing on recommended click)
   useEffect(() => {
@@ -664,6 +678,12 @@ const Watch = () => {
                     title={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
                     onOfflineDetected={setPlayingOffline}
                   />
+                  {/* Auto-cache on WiFi when video plays */}
+                  {networkDetection.isWifi() && (
+                    <div className="text-xs text-muted-foreground text-center py-1">
+                      📡 Auto-caching video on WiFi...
+                    </div>
+                  )}
                 </div>
               ) : (
                 <ArtPlayerComponent
@@ -671,6 +691,14 @@ const Watch = () => {
                   src={currentEpisode?.streamLink || drama.streamLink || ""}
                   poster={drama.image}
                   title={currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title}
+                  onVideoPlay={() => {
+                    const videoId = currentEpisode?.id || drama.firebaseId || id;
+                    const videoUrl = currentEpisode?.streamLink || drama.streamLink;
+                    const videoTitle = currentEpisode ? `${drama.title} - Episode ${currentEpisode.episodeNumber}` : drama.title;
+                    if (videoId && videoUrl && networkDetection.isWifi()) {
+                      autoCacheService.onVideoPlay(videoId, videoUrl, videoTitle, drama.image);
+                    }
+                  }}
                 />
               )
             ) : (
@@ -779,14 +807,21 @@ const Watch = () => {
             </div>
           )}
 
-          {/* Title & Meta */}
+          {/* Title & Meta with Badges */}
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
               <div className="flex-1">
-                <h1 className="text-foreground text-lg font-bold">{drama.title}</h1>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <h1 className="text-foreground text-lg font-bold">{drama.title}</h1>
+                  {drama.isVip && <Badge18Plus className="!w-10 !h-10" />}
+                </div>
                 {drama.episodes && <span className="text-muted-foreground text-sm">{drama.episodes}</span>}
               </div>
+              <div className="flex items-center gap-2">
+                {drama.downloadLink && <DownloadBadge showTooltip={false} />}
+                {drama.isHotDrama && <QualityBadge quality="4K" />}
               </div>
+            </div>
             {drama.rating && (
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-1">

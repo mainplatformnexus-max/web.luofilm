@@ -1,66 +1,149 @@
 # LUO FILM Project Documentation
 
-## Recent Updates (Latest Session)
+## Recent Updates (Session 2)
 
 ### 1. Google Analytics Integration
 - **Added**: Google Analytics tag (gtag.js) to `index.html`
 - **Tracking ID**: G-D6XSJWP6NF
 - **Purpose**: Track user analytics and engagement on the platform
 
-### 2. Offline Video Playback System
-Implemented a complete offline video caching and playback solution:
+### 2. Complete Offline Video System with Auto-Caching & Export
+Implemented a complete offline video caching and playback solution with auto-caching on WiFi and device export:
+
+#### Auto-Caching Features:
+- **WiFi Detection**: Automatically detects WiFi vs mobile data connection
+- **Smart Auto-Cache**: Automatically caches videos when played on WiFi (zero user interaction)
+- **Network Monitoring**: Real-time network status tracking
+- **Configurable Quality**: Auto-cache respects quality settings (720p default, customizable)
+
+#### Export Functionality:
+- **One-Click Export**: Export cached videos to device storage
+- **Offline Export**: Can export videos even without internet connection
+- **Auto-Cleanup**: Proper cleanup of blob URLs after export
+
+#### Badge System:
+- **18+ Badge**: Animated 3D red badge with pulsing glow for age-restricted content
+- **Download Badge**: Orange animated badge showing available downloads
+- **Quality Badge**: Purple/golden badge showing video quality (4K, etc.)
+
+### 3. Offline Video Playback System
 
 #### New Files Created:
+
+**Offline Playback & Caching:**
 1. **`src/hooks/useOfflineVideoPlayer.ts`**
    - Custom React hook for managing offline video playback state
    - Checks cached video availability
    - Falls back to online URL if no cached video exists
-   - Provides refetch capability
 
 2. **`src/lib/offlinePlayerUtils.ts`**
-   - Utility functions for offline video management:
-     - `getPlaybackUrl()` - Determines best video source (cached or online)
-     - `cacheVideoForOffline()` - Downloads and caches videos for offline
-     - `isCachedAndReady()` - Checks if video is cached and ready
-     - `getCachedVideoInfo()` - Retrieves cached video metadata
-     - `removeOfflineCache()` - Deletes cached videos
+   - Utility functions for offline video management
+   - `getPlaybackUrl()` - Determines best video source
+   - `cacheVideoForOffline()` - Downloads and caches videos
+   - `isCachedAndReady()` - Checks if video is cached
 
-3. **`src/components/OfflineVideoPlayerComponent.tsx`**
-   - Advanced video player component with offline support
-   - Features:
-     - Automatic detection of cached vs online videos
-     - Fallback to online streaming if cache unavailable
-     - Visual indicator ("Playing Offline" badge) when using cached content
-     - Supports HLS and standard MP4 formats via Plyr
-     - Proper cleanup of HLS and player instances
+3. **`src/lib/videoExport.ts`**
+   - Handles exporting cached videos to device storage
+   - `exportVideo()` - Downloads cached video to device
+   - `sanitizeFilename()` - Safely formats filenames
+   - `formatFileSize()` - Human-readable file sizes
+
+4. **`src/components/OfflineVideoPlayerComponent.tsx`**
+   - Advanced video player with offline support
+   - Export button on cached videos (hover to reveal)
+   - "Playing Offline" indicator badge
+   - Fallback to online if cache unavailable
+
+**Network Detection & Auto-Caching:**
+5. **`src/lib/networkDetection.ts`**
+   - WiFi vs mobile data detection using Navigator API
+   - Real-time network status monitoring
+   - Subscription system for network changes
+   - Returns connection type and effective type
+
+6. **`src/lib/autoCacheService.ts`**
+   - Automatic video caching on WiFi
+   - Smart service that triggers on video play
+   - Respects user settings and network conditions
+   - Prevents multiple downloads of same video
+   - Configurable quality and concurrent downloads
+
+**UI Badge Components:**
+7. **`src/components/Badge18Plus.tsx`**
+   - 3D animated 18+ badge with red theme
+   - Rotating animation with glow effect
+   - Pulsing scale animation
+   - Tooltip on hover
+
+8. **`src/components/DownloadBadge.tsx`**
+   - Orange animated download indicator
+   - Shows content is available for download
+   - Animated sliding dot indicator
+
+9. **`src/components/QualityBadge.tsx`**
+   - Purple/golden quality badge
+   - Shows video quality (4K, HD, etc.)
+   - Golden shimmer animation effect
 
 #### Modified Files:
 1. **`src/pages/Watch.tsx`**
-   - Added state for tracking offline playback (`playingOffline`, `cachedVideoUrl`)
-   - Integrated offline video checking on content load
-   - Updated player rendering to use `OfflineVideoPlayerComponent` when cached video available
-   - Falls back to `ArtPlayerComponent` for online streaming
-   - Imported new utility functions and components
+   - Added network status monitoring with real-time updates
+   - Integrated offline video detection on content load
+   - Auto-caching triggered when user plays video on WiFi
+   - New badge displays: 18+, Download, Quality badges
+   - Visual indicator for auto-caching in progress
+   - Imported all new services and badge components
+
+2. **`src/components/ArtPlayerComponent.tsx`**
+   - Added `onVideoPlay` callback prop
+   - Triggers auto-cache when video first plays
+   - Integrates with auto-cache service
+
+3. **`src/components/OfflineVideoPlayerComponent.tsx`**
+   - Added export functionality with progress tracking
+   - Export button appears on hover (for cached videos only)
+   - Blue export button with proper error handling
+   - Success/failure alerts on export completion
 
 ## How It Works
 
+### Auto-Caching Flow:
+1. **Network Detection**: System continuously monitors WiFi/mobile connection
+2. **Video Play Trigger**: When user clicks play on online player
+3. **Auto-Cache Logic**:
+   - If on WiFi → automatically starts caching video in background
+   - If on mobile → skips caching to save user data
+   - If already cached → uses existing cache
+4. **Background Download**: Caching happens silently without affecting playback
+5. **Multiple Accesses**: Same video won't be cached twice
+
 ### Offline Video Playback Flow:
-1. **Load Content**: When a drama/movie loads, the system checks if a cached version exists
-2. **Check Cache**: Uses `getPlaybackUrl()` to determine video source:
+1. **Load Content**: When a drama/movie loads, the system checks cache first
+2. **Source Priority**: Uses `getPlaybackUrl()` to determine source:
    - If cached and complete → uses blob URL for offline playback
    - If not cached → uses online streaming URL
 3. **Player Selection**: 
-   - `OfflineVideoPlayerComponent` → for cached videos (full offline support)
-   - `ArtPlayerComponent` → for online streaming
-4. **Visual Feedback**: Shows "Playing Offline" badge when cached video is active
-5. **Fallback**: If cached video fails to load, automatically falls back to online
+   - `OfflineVideoPlayerComponent` → for cached videos (full offline support + export)
+   - `ArtPlayerComponent` → for online streaming (with auto-cache on play)
+4. **Visual Feedback**: 
+   - "Playing Offline" orange badge on cached videos
+   - "📡 Auto-caching..." message while caching on WiFi
+   - 18+, Download, Quality badges show content capabilities
+
+### Export Flow:
+1. **Hover Detection**: Export button appears when hovering on cached video
+2. **One-Click Export**: User clicks export button
+3. **Download**: Video downloads to device storage as MP4
+4. **Cleanup**: Proper blob URL cleanup after download
 
 ### Key Features:
-- **No internet required for cached videos**: Uses browser IndexedDB and blob URLs
-- **Seamless fallback**: Automatically switches to online if offline playback fails
-- **HLS support**: Handles both HLS (.m3u8) and MP4 video formats
-- **Quality controls**: Supports video quality selection via Plyr player
-- **Proper resource cleanup**: Destroys HLS instances and players on unmount
+- **Zero-Touch Auto-Caching**: Automatic on WiFi, manual control for mobile data
+- **Complete Offline Playback**: No internet required for cached videos
+- **Device Export**: Export cached videos to download folder
+- **Seamless Fallback**: Auto-switches to online if offline fails
+- **HLS Support**: Handles both HLS (.m3u8) and MP4 formats
+- **Network-Aware**: Respects user's connection type
+- **Proper Cleanup**: Destroys player instances and blob URLs on unmount
 
 ## Technology Stack
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
@@ -76,15 +159,47 @@ Implemented a complete offline video caching and playback solution:
   - `dataUsage`: Tracks data usage statistics
 - **Video Expiration**: 30 days (configurable)
 
-## Testing the Feature
-1. Download a video to cache using the "Download" button
-2. Disable internet or go offline
-3. Reload the page - the player should automatically use the cached video
-4. Look for the "Playing Offline" badge in the player UI
-5. Video should play without any internet connection
+## Testing the Features
+
+### Auto-Caching (WiFi):
+1. Connect to WiFi
+2. Play any video
+3. Watch "📡 Auto-caching..." message
+4. Exit and come back later - video now plays offline
+5. Disable WiFi and reload - cached video plays without internet
+
+### Manual Caching (Mobile Data):
+1. Click the green "Download" button on mobile data
+2. Watch progress increase
+3. Video cached with your chosen quality
+4. Can now play offline without data
+
+### Export Cached Video:
+1. Play any cached video
+2. Hover over the video player
+3. Click blue "Export" button (appears on hover)
+4. Video downloads to device storage as MP4
+5. Can share or use elsewhere
+
+### Badge Display:
+1. **18+ Badge**: Shown on age-restricted content (animated with 3D rotation)
+2. **Download Badge**: Shows content available for download
+3. **Quality Badge**: Shows premium quality (4K) with golden shimmer
+
+## Configuration
+Auto-cache settings can be customized via `autoCacheService`:
+```javascript
+autoCacheService.setConfig({
+  enableAutoCacheOnWifi: true,      // Auto-cache on WiFi
+  maxConcurrentDownloads: 1,        // 1 video at a time
+  quality: '720p'                   // Default quality
+});
+```
 
 ## Notes
-- Cached videos are stored in browser's IndexedDB (not affected by cache clearing in most cases)
-- Each video can have multiple quality options (original, 720p, 480p, 360p)
-- Data usage is tracked per day, week, and month
-- All player controls work normally with cached videos
+- **Storage**: Cached videos use browser's IndexedDB (persists beyond session)
+- **Quality Options**: Original, 720p, 480p, 360p (configurable per download)
+- **Data Tracking**: Usage tracked per day, week, month
+- **Animations**: 18+ badge has 3D rotation + glow, badges have smooth transitions
+- **Network Smart**: Auto-cache only on WiFi, respects Save Data setting
+- **Export Anywhere**: Export works fully offline, downloads to device

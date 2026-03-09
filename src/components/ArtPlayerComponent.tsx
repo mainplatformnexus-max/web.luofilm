@@ -7,12 +7,30 @@ interface ArtPlayerComponentProps {
   src: string;
   poster?: string;
   title?: string;
+  onVideoPlay?: () => void;
 }
 
-const ArtPlayerComponent: React.FC<ArtPlayerComponentProps> = ({ src, poster, title }) => {
+const ArtPlayerComponent: React.FC<ArtPlayerComponentProps> = ({ src, poster, title, onVideoPlay }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const hasCalledPlayCallback = useRef(false);
+
+  // Trigger auto-cache on first play
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    const handlePlay = () => {
+      if (!hasCalledPlayCallback.current && onVideoPlay) {
+        hasCalledPlayCallback.current = true;
+        onVideoPlay();
+      }
+    };
+
+    video.addEventListener('play', handlePlay, { once: true });
+    return () => video.removeEventListener('play', handlePlay);
+  }, [onVideoPlay]);
 
   useEffect(() => {
     if (!videoRef.current) return;

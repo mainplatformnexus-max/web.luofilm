@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { videoCacheService } from '@/lib/videoCacheService';
-import { Wifi, AlertCircle } from 'lucide-react';
+import { videoExportService } from '@/lib/videoExport';
+import { Wifi, AlertCircle, Download } from 'lucide-react';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import Hls from 'hls.js';
@@ -26,6 +27,8 @@ const OfflineVideoPlayerComponent: React.FC<OfflineVideoPlayerComponentProps> = 
   const [isOffline, setIsOffline] = useState(false);
   const [isCached, setIsCached] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showExportBtn, setShowExportBtn] = useState(false);
 
   useEffect(() => {
     const loadVideo = async () => {
@@ -173,14 +176,44 @@ const OfflineVideoPlayerComponent: React.FC<OfflineVideoPlayerComponentProps> = 
     );
   }
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const filename = videoExportService.sanitizeFilename(title || 'video');
+      await videoExportService.exportVideo(videoId, filename);
+      alert('Video exported successfully!');
+    } catch (err) {
+      alert('Failed to export video: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="relative">
-      <video ref={videoRef} controls style={{ width: '100%' }} poster={posterUrl} />
+      <video 
+        ref={videoRef} 
+        controls 
+        style={{ width: '100%' }} 
+        poster={posterUrl}
+        onMouseEnter={() => isCached && setShowExportBtn(true)}
+        onMouseLeave={() => setShowExportBtn(false)}
+      />
       {isOffline && (
         <div className="absolute top-4 right-4 bg-orange-500/90 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-medium z-50">
           <Wifi className="w-4 h-4 opacity-60" />
           Playing Offline
         </div>
+      )}
+      {isCached && showExportBtn && (
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className="absolute top-4 left-4 bg-blue-500/90 hover:bg-blue-600/90 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-medium z-50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          {isExporting ? 'Exporting...' : 'Export'}
+        </button>
       )}
     </div>
   );
