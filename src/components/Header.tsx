@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Download, User, Home, Film, Tv, Radio, Trophy, Crown, ShieldCheck, Menu, X, Settings, LogOut, HelpCircle, Search } from "lucide-react";
+import { Download, User, Home, Film, Tv, Radio, Trophy, Crown, ShieldCheck, Menu, X, Settings, LogOut, HelpCircle, Search, Zap } from "lucide-react";
 import logo from "@/assets/logo.png";
 import LoginModal from "./LoginModal";
 import SubscribeModal from "./SubscribeModal";
@@ -20,6 +20,7 @@ const navLinks = [
   { label: "Live Sport", path: "/live-sport", icon: Trophy },
   { label: "Subscribe", path: "#subscribe", icon: Crown },
   { label: "Agent 1X", path: "#agent", icon: ShieldCheck },
+  { label: "Settings", path: "/settings", icon: Zap },
 ];
 
 const Header = () => {
@@ -95,6 +96,12 @@ const Header = () => {
               className="flex items-center gap-1.5 bg-secondary text-foreground text-[10px] font-medium px-3 py-1.5 rounded-full border border-border hover:bg-secondary/80 transition-all active:scale-95"
             >
               <HelpCircle className="w-3 h-3" />Guide
+            </button>
+            <button
+              onClick={() => navigate("/downloads")}
+              className="flex items-center gap-1.5 bg-secondary text-foreground text-[10px] font-medium px-3 py-1.5 rounded-full border border-border hover:bg-secondary/80 transition-all active:scale-95"
+            >
+              <Download className="w-3 h-3" />Downloads
             </button>
             {canInstall && (
               <button

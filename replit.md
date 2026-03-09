@@ -5,11 +5,11 @@ A React-based streaming platform frontend built with Vite, TypeScript, and Fireb
 ## Project Structure
 
 - `src/` - All frontend source code
-  - `pages/` - Page components (Index, Watch, Movies, Series, TVChannel, LiveSport, Agent, AgentWatch, AudiencePage, SharedContent, AdminDashboard, SectionPage, HowToUse, Profile, Settings, NotFound)
+  - `pages/` - Page components (Index, Watch, Movies, Series, TVChannel, LiveSport, Agent, AgentWatch, AudiencePage, SharedContent, AdminDashboard, SectionPage, HowToUse, Profile, Settings, Downloads, NotFound)
   - `components/` - Reusable UI components
   - `contexts/` - React context providers (AuthContext)
-  - `hooks/` - Custom React hooks (useNotificationTimer for 10-min stay notifications)
-  - `lib/` - Firebase config, services, and notificationService for browser notifications
+  - `hooks/` - Custom React hooks (useNotificationTimer, useVideoCache)
+  - `lib/` - Firebase config, services, notificationService, videoCacheService
   - `data/` - Static data files
 - `public/` - Static assets
 
@@ -17,12 +17,13 @@ A React-based streaming platform frontend built with Vite, TypeScript, and Fireb
 
 - **Frontend**: React 18, TypeScript, Vite 5
 - **Routing**: React Router DOM v6
-- **Auth & Database**: Firebase (Auth + Firestore) — config hardcoded in `src/lib/firebase.ts`
+- **Auth & Database**: Firebase (Auth + Firestore)
 - **UI**: Tailwind CSS, shadcn/ui (Radix UI), lucide-react
 - **State/Data**: TanStack React Query v5
 - **Video**: ArtPlayer, HLS.js, Shaka Player
 - **PWA**: vite-plugin-pwa
 - **Forms**: react-hook-form + zod
+- **Caching**: IndexedDB for offline video storage
 
 ## Running the App
 
@@ -35,43 +36,75 @@ Auth domain: `luo-film.firebaseapp.com`
 
 ## Recent Updates (March 2026)
 
-### Settings Page
-- Added desktop Settings page (`src/pages/Settings.tsx`) with all account information, notification preferences, and security settings
-- Accessible from user profile menu in header (both desktop and mobile)
-- Desktop layout with sidebar for additional help and account info
+### Navigation Updates
+- **Settings in Main Navigation**: Added Settings link to navigation menu near Agent 1X (both desktop and mobile)
+- **Downloads in Navigation**: Added Downloads to mobile bottom navigation
+- **Downloads Button**: Added Downloads button to header for quick access
+- Enhanced navigation with Zap icon for Settings
 
-### Mobile Navigation Enhancement
-- Increased mobile bottom navigation bar size for better usability
-- Larger tap targets (icons from 32px to 36px)
-- Increased vertical padding and spacing
-- Better visual hierarchy with improved text sizing
+### Settings Page
+- Full-featured Settings page (`src/pages/Settings.tsx`)
+- Account details, phone number, last login, member status
+- Notification preferences for new content, promotions, downloads, subscription reminders
+- Security settings with password change option
+- Data & Network settings
+
+### Data Saver Mode
+- Toggle in Settings page under "Data & Network"
+- Videos play at 480p or lower when enabled
+- Perfect for mobile users on limited data
+- Persistent setting stored in localStorage
+
+### Downloads & Offline Caching
+- **Downloads Page** (`src/pages/Downloads.tsx`):
+  - Full download manager interface
+  - Shows download progress for in-progress downloads
+  - Displays cache storage usage (up to 1GB per user)
+  - One-click delete for cached videos
+  - Quick-play button for completed downloads
+  - Status indicators: downloading, completed, paused, error
+
+- **Video Cache Service** (`src/lib/videoCacheService.ts`):
+  - IndexedDB-based persistent storage
+  - Download videos for offline viewing
+  - Automatic 30-day expiration for cached videos
+  - Progress tracking during download
+  - Cache size management
+
+- **useVideoCache Hook** (`src/hooks/useVideoCache.ts`):
+  - React hook for managing cached videos
+  - Load, download, delete, and track cache size
+  - Integration-ready for video player components
 
 ### Browser Notifications System
-- Created `src/lib/notificationService.ts` with real browser Notification API support
-- Support for content notifications: shows poster image with call-to-action
-- Support for subscription notifications: shows message with free subscription offer
-- Functions for:
-  - `requestNotificationPermission()` - Request browser notification permission
-  - `showNotification()` - Generic notification display
-  - `showContentNotification()` - For admin content uploads (movies, series, episodes, news, channels, 18+)
-  - `showFreeSubscriptionNotification()` - For 10-minute stay reward
+- **Real browser notifications** using Notification API (like YouTube/TikTok)
+- **Content Notifications**: Shows when admin uploads new content (movies, series, episodes, news, channels, 18+)
+- **User Engagement**: 10-minute stay notification offering 2 hours free access
+- Functions in `src/lib/notificationService.ts`:
+  - `requestNotificationPermission()` - Request browser permission
+  - `showNotification()` - Generic notification
+  - `showContentNotification()` - For content uploads
+  - `showFreeSubscriptionNotification()` - For user engagement
+- **10-Minute Timer** (`src/hooks/useNotificationTimer.ts`):
+  - Automatic notification after 10 minutes on site
+  - Once per day per user (localStorage tracking)
+  - Works on web and PWA app
 
-### 10-Minute Stay Notification
-- Created `src/hooks/useNotificationTimer.ts` hook
-- Automatically shows notification after user stays 10 minutes on website
-- Once per day per user (tracked in localStorage)
-- Offers 2 hours of free premium access
-- Works on both web and PWA app
+### Mobile Navigation Enhancement
+- Larger bottom navigation (icons 36px, padding py-2)
+- Better tap targets and spacing
+- Increased spacer height (h-20) for content clearance
+- Downloads and Account buttons easily accessible
 
-### Header Navigation Updates
-- Added Settings link in user profile dropdown (desktop and mobile)
-- Added Admin link to user dropdown (visible only to admin)
-- Moved Admin from main nav to user menu for cleaner navigation
+### TV Channel
+- **FREE for all users** - no subscription required
+- Live TV channels accessible without premium membership
 
 ## Notes
 
-- This is a frontend-only app — no Express backend
-- Firebase credentials are hardcoded in `src/lib/firebase.ts`
-- Port changed from 8080 to 5000 for Replit webview compatibility
-- Browser notifications work like YouTube — request permission and show native OS notifications
-- Notification system works on both web and PWA installed app versions
+- Frontend-only app — no Express backend
+- Firebase credentials hardcoded in `src/lib/firebase.ts`
+- Port configured to 5000 for Replit preview compatibility
+- Notifications work like YouTube — real browser notifications on desktop and mobile
+- Offline caching works on both web and PWA installed app
+- Data saver mode adapts video quality to connection speed

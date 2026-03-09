@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Film, Tv, Radio, Trophy, ShieldCheck, Download, User } from "lucide-react";
+import { Film, Tv, Radio, Trophy, ShieldCheck, Download, User, Zap } from "lucide-react";
 import { useState } from "react";
 import AgentAccessModal from "./AgentAccessModal";
 import SubscribeModal from "./SubscribeModal";
@@ -13,6 +13,7 @@ const navItems = [
   { label: "Agent", path: "#agent", icon: ShieldCheck, isCenter: true },
   { label: "18+", path: "/adult", icon: ShieldCheck },
   { label: "Sport", path: "/live-sport", icon: Trophy },
+  { label: "Downloads", path: "/downloads", icon: Download },
   { label: "Account", path: "/profile", icon: User },
 ];
 

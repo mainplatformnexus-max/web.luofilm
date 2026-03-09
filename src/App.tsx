@@ -25,6 +25,7 @@ import HowToUse from "./pages/HowToUse";
 import Sitemap from "./pages/Sitemap";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Downloads from "./pages/Downloads";
 import NotFound from "./pages/NotFound";
 import { useNotificationTimer } from "./hooks/useNotificationTimer";
 
@@ -46,6 +47,7 @@ const AppLayout = () => {
         <Route path="/watch/:id" element={<Watch />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/downloads" element={<Downloads />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/series" element={<Series />} />
         <Route path="/tv-channel" element={<TVChannel />} />

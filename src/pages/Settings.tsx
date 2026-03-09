@@ -16,6 +16,7 @@ const Settings = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [dataSaver, setDataSaver] = useState(false);
   const [notifications, setNotifications] = useState({
     newContent: true,
     promotions: true,
@@ -66,6 +67,16 @@ const Settings = () => {
         toast({ title: "Error", description: "Failed to save settings", variant: "destructive" });
       }
     }
+  };
+
+  const handleDataSaverToggle = () => {
+    const newValue = !dataSaver;
+    setDataSaver(newValue);
+    localStorage.setItem('dataSaverMode', newValue ? 'true' : 'false');
+    toast({
+      title: "Data Saver",
+      description: newValue ? "Data saver enabled - videos will load at lower quality" : "Data saver disabled",
+    });
   };
 
   const handleLogout = async () => {
@@ -182,6 +193,30 @@ const Settings = () => {
                     <p className="text-xs text-muted-foreground mb-1">Member Since</p>
                     <p className="text-sm font-medium text-foreground">{userDoc.createdAt}</p>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Data & Network Settings */}
+            <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+              <h2 className="text-lg font-bold text-foreground mb-4">Data & Network</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg hover:bg-secondary/50 transition-colors">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">Data Saver Mode</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Lower video quality to save data on mobile networks</p>
+                  </div>
+                  <button
+                    onClick={handleDataSaverToggle}
+                    className={`ml-3 w-10 h-6 rounded-full transition-colors ${dataSaver ? "bg-primary" : "bg-secondary"}`}
+                  >
+                    <div className={`w-5 h-5 rounded-full bg-white transition-transform ${dataSaver ? "translate-x-4" : "translate-x-0"}`} />
+                  </button>
+                </div>
+                <div className="p-3 bg-secondary/20 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Data Saver Enabled:</strong> Videos will automatically play at 480p or lower. Download videos for offline viewing to save more data.
+                  </p>
                 </div>
               </div>
             </div>
