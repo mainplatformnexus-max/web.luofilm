@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2, Play, Download as DownloadIcon, HardDrive } from "lucide-react";
+import { ArrowLeft, Trash2, Play, Download as DownloadIcon, HardDrive, TrendingDown } from "lucide-react";
 import { useVideoCache } from "@/hooks/useVideoCache";
-import type { CachedVideo } from "@/lib/videoCacheService";
+import { videoCacheService, type CachedVideo, type DataUsageStats } from "@/lib/videoCacheService";
 
 const Downloads = () => {
   const navigate = useNavigate();
   const { videos, loading, loadVideos, deleteVideo, getCacheSize } = useVideoCache();
   const [cacheSize, setCacheSize] = useState(0);
+  const [dataUsage, setDataUsage] = useState<DataUsageStats | null>(null);
 
   useEffect(() => {
     loadVideos();
@@ -20,6 +21,14 @@ const Downloads = () => {
     };
     updateSize();
   }, [videos, getCacheSize]);
+
+  useEffect(() => {
+    const loadDataUsage = async () => {
+      const usage = await videoCacheService.getDataUsage();
+      setDataUsage(usage);
+    };
+    loadDataUsage();
+  }, []);
 
   const formatSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -69,22 +78,52 @@ const Downloads = () => {
         <div className="bg-card border border-border rounded-2xl p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
             <HardDrive className="w-5 h-5 text-primary" />
-            <h2 className="font-bold text-foreground">Storage</h2>
+            <h2 className="font-bold text-foreground">Storage & Data Usage</h2>
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Used Space</span>
-              <span className="text-foreground font-medium">{formatSize(cacheSize)}</span>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Cached Videos</span>
+                <span className="text-foreground font-medium">{formatSize(cacheSize)}</span>
+              </div>
+              <div className="bg-secondary rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${Math.min((cacheSize / (100 * 1024 * 1024 * 1024)) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Up to 100GB available for downloads</p>
             </div>
-            <div className="bg-secondary rounded-full h-2 overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all"
-                style={{ width: `${Math.min((cacheSize / (1024 * 1024 * 1024)) * 100, 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">Up to 1GB available</p>
           </div>
         </div>
+
+        {/* Data Usage Stats */}
+        {dataUsage && (
+          <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <TrendingDown className="w-5 h-5 text-accent" />
+              <h2 className="font-bold text-foreground">Data Usage</h2>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Today</p>
+                <p className="text-sm font-bold text-foreground">{formatSize(dataUsage.todayUsage)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">This Week</p>
+                <p className="text-sm font-bold text-foreground">{formatSize(dataUsage.weekUsage)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">This Month</p>
+                <p className="text-sm font-bold text-foreground">{formatSize(dataUsage.monthUsage)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Total Used</p>
+                <p className="text-sm font-bold text-foreground">{formatSize(dataUsage.totalUsage)}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Downloads List */}
         {loading ? (

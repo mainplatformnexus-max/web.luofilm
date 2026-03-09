@@ -9,11 +9,20 @@ export interface CachedVideo {
   status: 'downloading' | 'completed' | 'paused' | 'error';
   createdAt: number;
   expiresAt: number;
+  quality: 'original' | '720p' | '480p' | '360p';
+}
+
+export interface DataUsageStats {
+  todayUsage: number;
+  weekUsage: number;
+  monthUsage: number;
+  totalUsage: number;
+  lastUpdated: number;
 }
 
 const DB_NAME = 'LuoFilmCache';
-const STORE_NAME = 'videos';
-const MAX_CACHE_SIZE = 1024 * 1024 * 1024; // 1GB
+const VIDEOS_STORE = 'videos';
+const DATA_STORE = 'dataUsage';
 
 class VideoCacheService {
   private db: IDBDatabase | null = null;
@@ -25,7 +34,7 @@ class VideoCacheService {
 
   private async init() {
     return new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, 1);
+      const request = indexedDB.open(DB_NAME, 2);
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
@@ -35,8 +44,11 @@ class VideoCacheService {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(VIDEOS_STORE)) {
+          db.createObjectStore(VIDEOS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(DATA_STORE)) {
+          db.createObjectStore(DATA_STORE, { keyPath: 'date' });
         }
       };
     });
@@ -45,8 +57,8 @@ class VideoCacheService {
   async addVideo(video: CachedVideo): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORE_NAME], 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
+      const tx = this.db!.transaction([VIDEOS_STORE], 'readwrite');
+      const store = tx.objectStore(VIDEOS_STORE);
       const request = store.add(video);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve();
@@ -56,8 +68,8 @@ class VideoCacheService {
   async updateVideo(video: CachedVideo): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORE_NAME], 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
+      const tx = this.db!.transaction([VIDEOS_STORE], 'readwrite');
+      const store = tx.objectStore(VIDEOS_STORE);
       const request = store.put(video);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve();
@@ -67,8 +79,8 @@ class VideoCacheService {
   async getVideo(id: string): Promise<CachedVideo | null> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORE_NAME], 'readonly');
-      const store = tx.objectStore(STORE_NAME);
+      const tx = this.db!.transaction([VIDEOS_STORE], 'readonly');
+      const store = tx.objectStore(VIDEOS_STORE);
       const request = store.get(id);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result || null);
@@ -78,8 +90,8 @@ class VideoCacheService {
   async getAllVideos(): Promise<CachedVideo[]> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORE_NAME], 'readonly');
-      const store = tx.objectStore(STORE_NAME);
+      const tx = this.db!.transaction([VIDEOS_STORE], 'readonly');
+      const store = tx.objectStore(VIDEOS_STORE);
       const request = store.getAll();
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result || []);
@@ -89,11 +101,72 @@ class VideoCacheService {
   async deleteVideo(id: string): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction([STORE_NAME], 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
+      const tx = this.db!.transaction([VIDEOS_STORE], 'readwrite');
+      const store = tx.objectStore(VIDEOS_STORE);
       const request = store.delete(id);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve();
+    });
+  }
+
+  async trackDataUsage(bytes: number): Promise<void> {
+    await this.initPromise;
+    const today = new Date().toDateString();
+    
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction([DATA_STORE], 'readwrite');
+      const store = tx.objectStore(DATA_STORE);
+      
+      const getRequest = store.get(today);
+      getRequest.onsuccess = () => {
+        const existing = getRequest.result || { date: today, usage: 0 };
+        existing.usage = (existing.usage || 0) + bytes;
+        
+        const putRequest = store.put(existing);
+        putRequest.onerror = () => reject(putRequest.error);
+        putRequest.onsuccess = () => resolve();
+      };
+    });
+  }
+
+  async getDataUsage(): Promise<DataUsageStats> {
+    await this.initPromise;
+    const today = new Date();
+    const todayStr = today.toDateString();
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction([DATA_STORE], 'readonly');
+      const store = tx.objectStore(DATA_STORE);
+      const request = store.getAll();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const records = request.result || [];
+        let todayUsage = 0;
+        let weekUsage = 0;
+        let monthUsage = 0;
+        let totalUsage = 0;
+
+        records.forEach((record: any) => {
+          const recordDate = new Date(record.date);
+          const usage = record.usage || 0;
+
+          if (record.date === todayStr) todayUsage = usage;
+          if (recordDate >= weekAgo) weekUsage += usage;
+          if (recordDate >= monthAgo) monthUsage += usage;
+          totalUsage += usage;
+        });
+
+        resolve({
+          todayUsage,
+          weekUsage,
+          monthUsage,
+          totalUsage,
+          lastUpdated: Date.now(),
+        });
+      };
     });
   }
 
@@ -103,7 +176,8 @@ class VideoCacheService {
     title: string,
     posterUrl?: string,
     type: 'movie' | 'series' | 'tv' | 'sport' = 'movie',
-    onProgress?: (progress: number) => void
+    quality: 'original' | '720p' | '480p' | '360p' = '720p',
+    onProgress?: (progress: number, downloadedBytes: number) => void
   ): Promise<void> {
     await this.initPromise;
 
@@ -116,8 +190,9 @@ class VideoCacheService {
       size: 0,
       progress: 0,
       status: 'downloading',
+      quality,
       createdAt: Date.now(),
-      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
     };
 
     await this.addVideo(video);
@@ -130,20 +205,21 @@ class VideoCacheService {
       if (!reader) throw new Error('Cannot read response');
 
       let receivedLength = 0;
-      const chunks: Uint8Array[] = [];
+      const totalLength = parseInt(response.headers.get('content-length') || '0', 10);
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        chunks.push(value);
         receivedLength += value.length;
-
-        const progress = Math.min(100, (receivedLength / (response.headers.get('content-length') ? parseInt(response.headers.get('content-length')!) : 1)) * 100);
-        video.progress = Math.round(progress);
-        onProgress?.(video.progress);
+        const progress = totalLength ? Math.round((receivedLength / totalLength) * 100) : 0;
+        
+        video.progress = progress;
+        video.size = receivedLength;
+        onProgress?.(progress, receivedLength);
 
         await this.updateVideo(video);
+        await this.trackDataUsage(value.length);
       }
 
       video.status = 'completed';
