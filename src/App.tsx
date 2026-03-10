@@ -28,6 +28,7 @@ import Settings from "./pages/Settings";
 import Downloads from "./pages/Downloads";
 import NotFound from "./pages/NotFound";
 import { useNotificationTimer } from "./hooks/useNotificationTimer";
+import { NotificationPrompt } from "./components/NotificationPrompt";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const AppLayout = () => {
   return (
     <>
       <ActivityTrackerProvider />
+      <NotificationPrompt />
       <PhoneSetupModal isOpen={needsPhoneSetup} />
       {!isAudiencePage && <Header />}
       <Routes>
