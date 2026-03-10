@@ -11,9 +11,15 @@ export const NotificationPrompt = () => {
     const isDenied = Notification.permission === 'denied';
     const dismissed = localStorage.getItem('notification-prompt-dismissed');
     
-    if (!isAllowed && !isDenied && !dismissed) {
-      const timer = setTimeout(() => setShow(true), 3000);
-      return () => clearTimeout(timer);
+    if (!isAllowed && !isDenied) {
+      // Show immediately for debugging, then every 3s
+      setShow(true);
+      const timer = setInterval(() => {
+        if (Notification.permission === 'default') {
+          setShow(true);
+        }
+      }, 5000);
+      return () => clearInterval(timer);
     }
   }, []);
 

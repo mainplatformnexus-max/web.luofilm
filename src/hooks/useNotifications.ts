@@ -3,9 +3,24 @@ import { subscribeMovies, subscribeSeries, subscribeEpisodes } from '@/lib/fireb
 
 export const useNotifications = () => {
   const requestPermission = async () => {
-    if (!('Notification' in window)) return false;
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    if (!('Notification' in window)) {
+      alert("This browser does not support desktop notification");
+      return false;
+    }
+    
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        showNotification("Notifications Enabled!", {
+          body: "You will now receive updates for new movies and series."
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      return false;
+    }
   };
 
   const showNotification = (title: string, options?: NotificationOptions) => {
