@@ -62,13 +62,24 @@ export const useNotifications = () => {
       }
     });
 
-    // Periodic "Thank you" or status messages
+    // Periodic engagement messages
+    const messages = [
+      { title: "Subscribe & Save!", body: "Get unlimited access to all movies and series. Subscribe now!", url: "/profile" },
+      { title: "Latest Releases", body: "Don't miss out on the newest trending movies and episodes!", url: "/movies" },
+      { title: "Earn Money as an Agent", body: "Sell movies on our Agent page and start earning today!", url: "/agent" },
+      { title: "Offline Viewing", body: "Remember to cache your favorite videos for offline watching!", url: "/downloads" },
+      { title: "High-Speed Streaming", body: "Our data servers are optimized for the best viewing experience!", url: "/" }
+    ];
+
+    let messageIndex = 0;
     const interval = setInterval(() => {
-      showNotification("Enjoying LUO FILM?", {
-        body: "Check out the latest TV channels and upcoming sports!",
-        data: { url: '/' }
+      const msg = messages[messageIndex];
+      showNotification(msg.title, {
+        body: msg.body,
+        data: { url: msg.url }
       });
-    }, 15 * 60 * 1000); // Every 15 minutes
+      messageIndex = (messageIndex + 1) % messages.length;
+    }, 10 * 60 * 1000); // Every 10 minutes rotate through messages
 
     return () => {
       unsubMovies();
