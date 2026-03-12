@@ -593,9 +593,41 @@ const Watch = () => {
       return;
     }
     
-    const videoUrl = currentEpisode?.streamLink || currentEpisode?.downloadLink || (drama as any).downloadLink || drama.streamLink;
+    // Prefer direct downloadLink (MP4) over streamLink (m3u8) for offline caching
+    const videoUrl =
+      currentEpisode?.downloadLink || currentEpisode?.streamLink ||
+      (drama as any).downloadLink || drama.streamLink;
     if (!videoUrl) {
-      toast({ title: "Error", description: "No video available to cache", variant: "destructive" });
+      toast({ title: "Error", description: "No downloadable video available", variant: "destructive" });
+      return;
+    }
+
+    // Warn if URL is a streaming-only format that can't truly be cached
+    const isStreamOnly = /\.m3u8|rtmp:|rtsp:|manifest/i.test(videoUrl) && !/\.mp4/i.test(videoUrl);
+    if (isStreamOnly) {
+      toast({
+        title: "Stream-Only Content",
+        description: "This video uses a live stream format and requires an internet connection to play. The video info has been saved to Downloads for quick access.",
+        variant: "default",
+      });
+      // Still save metadata so it shows in Downloads as a shortcut
+      const contentId = firebaseState?.firebaseId || id || "";
+      const videoTitle = currentEpisode
+        ? `${drama.title} - S${currentEpisode.seasonNumber || 1} EP${currentEpisode.episodeNumber}`
+        : drama.title;
+      await videoCacheService.addVideo({
+        id: contentId,
+        title: videoTitle,
+        url: videoUrl,
+        posterUrl: drama.image,
+        type: episodes.length > 0 ? 'series' : 'movie',
+        size: 0,
+        progress: 100,
+        status: 'completed',
+        quality: 'original',
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      }).catch(() => {});
       return;
     }
 
@@ -604,7 +636,7 @@ const Watch = () => {
     try {
       const contentId = firebaseState?.firebaseId || id || "";
       const videoTitle = currentEpisode 
-        ? `${drama.title} - Episode ${currentEpisode.episodeNumber}`
+        ? `${drama.title} - S${currentEpisode.seasonNumber || 1} EP${currentEpisode.episodeNumber}`
         : drama.title;
       
       await downloadVideo(
@@ -616,9 +648,29 @@ const Watch = () => {
         'original',
         (progress) => setCacheProgress(progress)
       );
-      toast({ title: "Cached!", description: "Watch offline anytime from Downloads", variant: "default" });
+      toast({ title: "✅ Saved for Offline!", description: "Watch anytime from your Downloads — even without internet." });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to cache video", variant: "destructive" });
+      // If download fails, try saving with proxy URL
+      try {
+        const proxyUrl = `https://download.mainplatform-nexus.workers.dev/?url=${encodeURIComponent(videoUrl)}&filename=${encodeURIComponent(drama.title + '.mp4')}`;
+        const contentId = firebaseState?.firebaseId || id || "";
+        await downloadVideo(
+          contentId + '_proxy',
+          proxyUrl,
+          drama.title,
+          drama.image,
+          episodes.length > 0 ? 'series' : 'movie',
+          'original',
+          (progress) => setCacheProgress(progress)
+        );
+        toast({ title: "✅ Saved for Offline!", description: "Watch anytime from your Downloads." });
+      } catch {
+        toast({
+          title: "Download Failed",
+          description: "This video cannot be saved offline. This may be due to content protection. Try a different video.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsCaching(false);
       setCacheProgress(0);

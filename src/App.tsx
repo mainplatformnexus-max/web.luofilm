@@ -31,7 +31,9 @@ import { useNotificationTimer } from "./hooks/useNotificationTimer";
 import { useNotifications, showWelcomeNotification } from "./hooks/useNotifications";
 import { NotificationPrompt, InAppNotificationContainer } from "./components/NotificationPrompt";
 import { subscribeMovies, subscribeSeries } from "./lib/firebaseServices";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import SubscribeModal from "./components/SubscribeModal";
+import { registerSubscribeModal } from "./lib/globalModals";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +76,16 @@ const AppLayout = () => {
   const location = useLocation();
   const { needsPhoneSetup } = useAuth();
   const isAudiencePage = location.pathname.startsWith("/a/");
+  const [showSubscribe, setShowSubscribe] = useState(false);
+  const [subscribeMode, setSubscribeMode] = useState<"user" | "agent">("user");
+
+  useEffect(() => {
+    registerSubscribeModal((mode = "user") => {
+      setSubscribeMode(mode);
+      setShowSubscribe(true);
+    });
+  }, []);
+
   useNotificationTimer();
   useNotifications();
   useWelcomeNotification();
@@ -84,6 +96,7 @@ const AppLayout = () => {
       <InAppNotificationContainer />
       <NotificationPrompt />
       <PhoneSetupModal isOpen={needsPhoneSetup} />
+      <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} mode={subscribeMode} />
       {!isAudiencePage && <Header />}
       <Routes>
         <Route path="/" element={<Index />} />

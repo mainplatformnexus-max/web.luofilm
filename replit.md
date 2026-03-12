@@ -1,5 +1,39 @@
 # LUO FILM Project Documentation
 
+## Recent Updates (Session 4)
+
+### Homepage Redesign
+- **Single "Best on LUO FILM" section**: All movies, series, and episodes merged in one grid sorted by upload date (newest first)
+- **Interactive genre filter**: Clickable pill tags (All Videos, China Mainland, South Korea, etc.) that filter the main grid in real-time
+- **Rankings – Top 100**: Separate section with numbered rank badges sorted by rating
+- **Agent Exclusives**: Section showing agent-only content still within 5-day window
+- **18+ Content**: Adult content section (only shows if isAdult content exists)
+
+### Global Subscribe Modal
+- Created `src/lib/globalModals.ts` with `showSubscribeModal()` / `registerSubscribeModal()` 
+- Subscribe modal registered in AppLayout, triggered from anywhere (notifications, etc.)
+- Subscription notification buttons now open the modal directly instead of navigating to /profile
+
+### Enhanced Notification System
+- **Welcome notification**: Shows on first login per account with random poster, "Movies" & "Series" buttons
+- **TV Channel notification**: 2 minutes after page load, with live TV poster, red accent
+- **Subscription promo**: 5 minutes in, uses last-watched movie poster, opens subscribe modal
+- **Rotating messages**: Every 12 minutes with varied topics and action buttons
+- **Better card design**: Progress bar draining across bottom, colored accent stripe, embedded action buttons
+- Notifications use `SUBSCRIBE_MODAL` URL to trigger global modal instead of navigating
+
+### Cache / Offline Download Fix
+- Prioritizes `downloadLink` (direct MP4) over `streamLink` (m3u8 HLS) for caching
+- Detects streaming-only URLs (m3u8, rtmp) and shows informative message instead of failing silently
+- Falls back to proxy URL if direct download fails due to CORS
+- Shows proper success/error messages for each scenario
+- Stream-only content saves metadata to Downloads for quick online access
+
+### OG Meta Tags (already existed, verified)
+- Watch page updates og:title, og:description, og:image with movie/series name and poster
+- Twitter card meta tags also updated dynamically
+- IDs in index.html: og-title, og-desc, og-image, twitter-title, twitter-desc, twitter-image
+
 ## Recent Updates (Session 2)
 
 ### 1. Google Analytics Integration

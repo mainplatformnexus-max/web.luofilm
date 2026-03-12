@@ -1,24 +1,12 @@
-import { useState, useEffect } from "react";
-import { Film, Tv, TrendingUp, Clock, Flame, Heart, Crown, Star, Sparkles, ListOrdered, Clapperboard } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Trophy, Users, ShieldAlert, Sparkles } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
 import ContentRow from "@/components/ContentRow";
-import GenreTags from "@/components/GenreTags";
 import LogoLoader from "@/components/LogoLoader";
-
 import { subscribeMovies, subscribeSeries, subscribeEpisodes } from "@/lib/firebaseServices";
 import type { MovieItem, SeriesItem, EpisodeItem } from "@/data/adminData";
 import type { Drama } from "@/data/dramas";
-
-const ALL_CATEGORIES = [
-  "Popular",
-  "Coming Soon",
-  "Top Ten",
-  "Sweet Romance",
-  "Ancient Costume",
-  "High Quality Dramas",
-  "Drama Selection",
-  "Hot Drama",
-];
+import { genreTags } from "@/data/dramas";
 
 const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
   id: i + 5000,
@@ -44,31 +32,124 @@ const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
   createdAt: item.createdAt,
 });
 
+const isStillActive = (d: Drama) => {
+  if (!d.isAgent) return false;
+  const markedAt = d.agentMarkedAt ? new Date(d.agentMarkedAt) : null;
+  if (!markedAt) return false;
+  return Math.floor((Date.now() - markedAt.getTime()) / (1000 * 60 * 60 * 24)) < 5;
+};
+
+// Pill genre filter row
+const GenreFilter = ({ active, onChange }: { active: string; onChange: (g: string) => void }) => (
+  <div className="px-4 md:px-10 mb-4">
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+      {genreTags.map(tag => (
+        <button
+          key={tag}
+          onClick={() => onChange(tag)}
+          className={`flex-shrink-0 px-3 py-1 rounded-full text-[10px] md:text-[11px] font-semibold transition-all ${
+            active === tag
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+          }`}
+        >
+          {tag}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 const Index = () => {
   const [fbMovies, setFbMovies] = useState<(MovieItem & { _idx: number })[] | null>(null);
   const [fbSeries, setFbSeries] = useState<(SeriesItem & { _idx: number })[] | null>(null);
   const [fbEpisodes, setFbEpisodes] = useState<EpisodeItem[]>([]);
+  const [activeGenre, setActiveGenre] = useState("All Videos");
 
   useEffect(() => {
-    const unsub1 = subscribeMovies((movies) =>
-      setFbMovies(movies.map((m, i) => ({ ...m, _idx: i })))
-    );
-    const unsub2 = subscribeSeries((series) =>
-      setFbSeries(series.map((s, i) => ({ ...s, _idx: i + 1000 })))
-    );
-    const unsub3 = subscribeEpisodes((eps) => setFbEpisodes(eps));
+    const unsub1 = subscribeMovies(movies => setFbMovies(movies.map((m, i) => ({ ...m, _idx: i }))));
+    const unsub2 = subscribeSeries(series => setFbSeries(series.map((s, i) => ({ ...s, _idx: i + 1000 }))));
+    const unsub3 = subscribeEpisodes(eps => setFbEpisodes(eps));
 
-    // Add SEO meta tags dynamically
     document.title = "LUO FILM - Watch Movies, Series & Live Sports Online";
     const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute("content", "LUO FILM is the #1 platform for streaming the latest movies, drama series, live football, and TV channels. Join our Agent program to earn.");
-    }
+    if (metaDesc) metaDesc.setAttribute("content", "LUO FILM is the #1 platform for streaming the latest movies, drama series, live football, and TV channels.");
 
     return () => { unsub1(); unsub2(); unsub3(); };
   }, []);
 
   const loading = fbMovies === null || fbSeries === null;
+
+  // ── Derived data ──────────────────────────────────────────────────────────
+  const allMovieDramas = useMemo(() => fbMovies?.map(m => toDrama(m, m._idx)) ?? [], [fbMovies]);
+  const allSeriesDramas = useMemo(() => fbSeries?.map(s => toDrama(s, s._idx)) ?? [], [fbSeries]);
+
+  // Episodes with series poster + S1 EP3 badge
+  const episodeDramas = useMemo<Drama[]>(() => {
+    if (!fbEpisodes.length || !fbSeries) return [];
+    return [...fbEpisodes]
+      .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
+      .slice(0, 40)
+      .map((ep, i) => {
+        const parent = fbSeries!.find(s => s.id === ep.seriesId);
+        return {
+          id: i + 9000,
+          title: ep.seriesName || ep.name,
+          image: parent?.posterUrl || "/placeholder.svg",
+          firebaseId: ep.seriesId,
+          episodeBadge: `S${ep.seasonNumber || 1} EP${ep.episodeNumber || 1}`,
+          createdAt: ep.createdAt,
+          genre: parent?.genre,
+          rating: parent?.rating,
+        } as Drama;
+      });
+  }, [fbEpisodes, fbSeries]);
+
+  // "Best on LUO FILM" = movies + series + episodes merged, sorted latest first
+  const bestAll = useMemo<Drama[]>(() => {
+    const base = [
+      ...allMovieDramas.map(d => isStillActive(d) ? { ...d, badge: "Agent Only", streamLink: undefined } : d),
+      ...allSeriesDramas,
+      ...episodeDramas,
+    ].sort((a, b) => {
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return db - da;
+    });
+    if (activeGenre === "All Videos") return base;
+    return base.filter(d => {
+      const genre = d.genre?.toLowerCase() || "";
+      const categories = (d as any).categories || [];
+      return (
+        genre.includes(activeGenre.toLowerCase()) ||
+        categories.some((c: string) => c.toLowerCase().includes(activeGenre.toLowerCase()))
+      );
+    });
+  }, [allMovieDramas, allSeriesDramas, episodeDramas, activeGenre]);
+
+  // Rankings — top 100 sorted by rating desc
+  const rankings = useMemo<Drama[]>(() => {
+    const base = [...allMovieDramas, ...allSeriesDramas]
+      .filter(d => (d.rating ?? 0) > 0)
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, 100)
+      .map((d, i) => ({ ...d, rank: i + 1 }));
+    return base;
+  }, [allMovieDramas, allSeriesDramas]);
+
+  // Agent exclusives — still within 5-day agent window
+  const agentContent = useMemo<Drama[]>(() => {
+    return [...allMovieDramas, ...allSeriesDramas].filter(d => isStillActive(d));
+  }, [allMovieDramas, allSeriesDramas]);
+
+  // 18+ adult content
+  const adultContent = useMemo<Drama[]>(() => {
+    const adultMovies = (fbMovies || []).filter(m => m.isAdult).map(m => toDrama(m, m._idx));
+    const adultSeries = (fbSeries || []).filter(s => s.isAdult).map(s => toDrama(s, s._idx));
+    return [...adultMovies, ...adultSeries].sort((a, b) =>
+      (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+    );
+  }, [fbMovies, fbSeries]);
 
   if (loading) {
     return (
@@ -79,120 +160,58 @@ const Index = () => {
     );
   }
 
-  const isStillAgent = (d: Drama) => {
-    if (!d.isAgent) return false;
-    const markedAt = d.agentMarkedAt ? new Date(d.agentMarkedAt) : null;
-    if (!markedAt) return false;
-    return Math.floor((Date.now() - markedAt.getTime()) / (1000 * 60 * 60 * 24)) < 5;
-  };
-
-  const all = [
-    ...fbMovies.map(m => toDrama(m, m._idx)),
-    ...fbSeries.map(s => toDrama(s, s._idx)),
-  ].sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    if (dateB !== dateA) return dateB - dateA;
-    return (a.displayOrder || 0) - (b.displayOrder || 0);
-  });
-
-  const displayAll = all.map(d => {
-    if (isStillAgent(d)) {
-      const markedAt = new Date(d.agentMarkedAt!);
-      const leaveDate = new Date(markedAt.getTime() + 5 * 24 * 60 * 60 * 1000);
-      return { ...d, badge: `Available ${leaveDate.toLocaleDateString()}`, streamLink: undefined };
-    }
-    return d;
-  });
-
-  const popular = displayAll.filter(d => fbMovies.find(m => m.id === d.firebaseId)?.isPopular || fbSeries.find(s => s.id === d.firebaseId)?.isPopular);
-  const comingSoon = displayAll.filter(d => d.badge?.startsWith("Coming") || d.badge?.startsWith("Available"));
-  const topTen = displayAll.filter(d => d.rank != null).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99)).map((d, i) => ({ ...d, rank: i + 1 }));
-  const sweetRomance = displayAll.filter(d => {
-    const item = fbMovies.find(m => m.id === d.firebaseId) || fbSeries.find(s => s.id === d.firebaseId);
-    return item?.categories?.includes("Sweet Romance");
-  });
-  const ancientCostume = displayAll.filter(d => {
-    const item = fbMovies.find(m => m.id === d.firebaseId) || fbSeries.find(s => s.id === d.firebaseId);
-    return item?.categories?.includes("Ancient Costume");
-  });
-  const highQuality = displayAll.filter(d => {
-    const item = fbMovies.find(m => m.id === d.firebaseId) || fbSeries.find(s => s.id === d.firebaseId);
-    return item?.categories?.includes("High Quality Dramas");
-  });
-  const dramaSelection = displayAll.filter(d => {
-    const item = fbMovies.find(m => m.id === d.firebaseId) || fbSeries.find(s => s.id === d.firebaseId);
-    return item?.categories?.includes("Drama Selection");
-  }).sort((a, b) => {
-    const itemA = fbSeries.find(s => s.id === a.firebaseId);
-    const itemB = fbSeries.find(s => s.id === b.firebaseId);
-    return ((itemA as any)?.dramaSelectionPosition || 999) - ((itemB as any)?.dramaSelectionPosition || 999);
-  }).map((d, i) => ({ ...d, rank: i + 1 }));
-  const hotDrama = displayAll.filter(d => {
-    const item = fbMovies.find(m => m.id === d.firebaseId) || fbSeries.find(s => s.id === d.firebaseId);
-    return item?.isHotDrama;
-  });
-
-  const onlyMovies = fbMovies.map(m => toDrama(m, m._idx)).map(d => isStillAgent(d) ? { ...d, badge: "Upcoming", streamLink: undefined } : d).sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    if (dateB !== dateA) return dateB - dateA;
-    return (a.displayOrder || 0) - (b.displayOrder || 0);
-  });
-  const onlySeries = fbSeries.map(s => toDrama(s, s._idx)).sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    if (dateB !== dateA) return dateB - dateA;
-    return (a.displayOrder || 0) - (b.displayOrder || 0);
-  });
-
-  // Build new episodes list — each episode as a Drama card using series poster + season/ep badge
-  const newEpisodes: Drama[] = fbEpisodes.length > 0 && fbSeries
-    ? [...fbEpisodes]
-        .sort((a, b) => {
-          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const db_ = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return db_ - da;
-        })
-        .slice(0, 20)
-        .map((ep, i) => {
-          const parentSeries = fbSeries!.find(s => s.id === ep.seriesId);
-          const badge = `S${ep.seasonNumber || 1} EP${ep.episodeNumber || 1}`;
-          return {
-            id: i + 9000,
-            title: ep.seriesName || ep.name,
-            image: parentSeries?.posterUrl || "/placeholder.svg",
-            firebaseId: ep.seriesId,
-            episodeBadge: badge,
-            createdAt: ep.createdAt,
-          } as Drama;
-        })
-    : [];
-
   return (
     <div className="min-h-screen bg-background">
       <HeroBanner />
-      <div className="mt-6">
-        {newEpisodes.length > 0 && <ContentRow title="New Episodes" dramas={newEpisodes} icon={Clapperboard} isGrid />}
-        {onlyMovies.length > 0 && <ContentRow title="Movies" dramas={onlyMovies} icon={Film} isGrid />}
-        {onlySeries.length > 0 && <ContentRow title="Series" dramas={onlySeries} icon={Tv} isGrid />}
-        {popular.length > 0 && <ContentRow title="Popular on LUO FILM" dramas={popular} icon={TrendingUp} isGrid />}
-        {comingSoon.length > 0 && <ContentRow title="Coming Soon & Upcoming" dramas={comingSoon} icon={Clock} isGrid />}
-        
-        <GenreTags />
-        {topTen.length > 0 && <ContentRow title="Drama Selection" dramas={topTen} icon={ListOrdered} showRank isGrid />}
-        {dramaSelection.length > 0 && <ContentRow title="Editor's Selection" dramas={dramaSelection} icon={Star} showRank isGrid />}
-        {highQuality.length > 0 && <ContentRow title="High-quality Dramas" dramas={highQuality} icon={Crown} isGrid />}
-        {hotDrama.length > 0 && <ContentRow title="Hot Dramas" dramas={hotDrama} icon={Flame} isGrid />}
-        {sweetRomance.length > 0 && <ContentRow title="Sweet Romance" dramas={sweetRomance} titleColor="hsl(30, 100%, 50%)" icon={Heart} isGrid />}
-        
-        {ancientCostume.length > 0 && <ContentRow title="Ancient Costume" dramas={ancientCostume} titleColor="hsl(30, 100%, 50%)" icon={Sparkles} isGrid />}
-        {displayAll.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-            <Film className="w-10 h-10 mb-4" />
-            <p className="text-sm font-medium">No content yet</p>
-            <p className="text-xs mt-1">Admin can upload movies and series from the dashboard</p>
+
+      {/* Genre filter — right below hero */}
+      <div className="mt-5">
+        <GenreFilter active={activeGenre} onChange={setActiveGenre} />
+
+        {/* ── BEST ON LUO FILM ─────────────────────────────────── */}
+        {bestAll.length > 0 ? (
+          <ContentRow
+            title="Best on LUO FILM"
+            dramas={bestAll}
+            icon={Sparkles}
+            isGrid
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground px-4">
+            <Sparkles className="w-10 h-10 mb-4 opacity-30" />
+            <p className="text-sm font-medium">No content matches this genre yet</p>
           </div>
+        )}
+
+        {/* ── RANKINGS – TOP 100 ───────────────────────────────── */}
+        {rankings.length > 0 && (
+          <ContentRow
+            title="Rankings – Top 100"
+            dramas={rankings}
+            icon={Trophy}
+            isGrid
+            showRank
+          />
+        )}
+
+        {/* ── AGENT EXCLUSIVES ─────────────────────────────────── */}
+        {agentContent.length > 0 && (
+          <ContentRow
+            title="Agent Exclusives"
+            dramas={agentContent}
+            icon={Users}
+            isGrid
+          />
+        )}
+
+        {/* ── 18+ SECTION ──────────────────────────────────────── */}
+        {adultContent.length > 0 && (
+          <ContentRow
+            title="18+ Content"
+            dramas={adultContent}
+            icon={ShieldAlert}
+            isGrid
+          />
         )}
       </div>
     </div>

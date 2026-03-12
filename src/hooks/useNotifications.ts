@@ -140,10 +140,10 @@ export const useNotifications = () => {
         '👑 Unlock All Movies & Series!',
         'Subscribe to LUO FILM and enjoy unlimited streaming, downloads & exclusive content with no limits!',
         poster,
-        '/profile',
+        'SUBSCRIBE_MODAL',
         [
-          { label: '👑 Subscribe Now', url: '/profile', color: '#d97706' },
-          { label: 'Learn More', url: '/profile', color: '#374151' },
+          { label: '👑 Subscribe Now', url: 'SUBSCRIBE_MODAL', color: '#d97706' },
+          { label: '🎬 Browse Free', url: '/movies', color: '#374151' },
         ],
         '#d97706',
         10000
@@ -156,9 +156,10 @@ export const useNotifications = () => {
         title: '💎 Premium Access – Subscribe Today!',
         body: 'Get unlimited movies, series & downloads. Join thousands of happy subscribers!',
         icon: '/logo.png',
-        url: '/profile',
+        url: 'SUBSCRIBE_MODAL',
         buttons: [
-          { label: '👑 Subscribe', url: '/profile', color: '#d97706' },
+          { label: '👑 Subscribe Now', url: 'SUBSCRIBE_MODAL', color: '#d97706' },
+          { label: '🎬 Movies', url: '/movies', color: '#1d4ed8' },
         ] as NotifButton[],
         accent: '#d97706',
       },

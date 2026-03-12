@@ -89,7 +89,11 @@ const NotifCard = ({
 
   const handleNavigate = (url: string) => {
     onDismiss();
-    navigate(url);
+    if (url === "SUBSCRIBE_MODAL") {
+      import("@/lib/globalModals").then(m => m.showSubscribeModal("user"));
+    } else {
+      navigate(url);
+    }
   };
 
   return (
