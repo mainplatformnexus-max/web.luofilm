@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Trophy, Users, ShieldAlert, Sparkles } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Trophy, Users, ShieldAlert, Sparkles, SlidersHorizontal, ChevronDown, X, Check } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
 import ContentRow from "@/components/ContentRow";
 import LogoLoader from "@/components/LogoLoader";
@@ -39,26 +39,71 @@ const isStillActive = (d: Drama) => {
   return Math.floor((Date.now() - markedAt.getTime()) / (1000 * 60 * 60 * 24)) < 5;
 };
 
-// Pill genre filter row
-const GenreFilter = ({ active, onChange }: { active: string; onChange: (g: string) => void }) => (
-  <div className="px-4 md:px-10 mb-4">
-    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-      {genreTags.map(tag => (
-        <button
-          key={tag}
-          onClick={() => onChange(tag)}
-          className={`flex-shrink-0 px-3 py-1 rounded-full text-[10px] md:text-[11px] font-semibold transition-all ${
-            active === tag
-              ? "bg-primary text-primary-foreground shadow-md"
-              : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
-          }`}
-        >
-          {tag}
-        </button>
-      ))}
+// Genre icon button + dropdown panel
+const GenreFilter = ({ active, onChange }: { active: string; onChange: (g: string) => void }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const isFiltered = active !== "All Videos";
+
+  return (
+    <div ref={ref} className="relative px-4 md:px-10 mb-2">
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[11px] font-semibold transition-all shadow-sm ${
+          isFiltered
+            ? "bg-primary border-primary text-primary-foreground"
+            : "bg-secondary/70 border-border text-foreground hover:bg-secondary"
+        }`}
+      >
+        <SlidersHorizontal className="w-3.5 h-3.5" />
+        <span>{isFiltered ? active : "Genre"}</span>
+        {isFiltered
+          ? <X className="w-3 h-3 ml-0.5" onClick={e => { e.stopPropagation(); onChange("All Videos"); setOpen(false); }} />
+          : <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        }
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute left-4 md:left-10 top-full mt-2 z-50 bg-card border border-border rounded-2xl shadow-2xl p-4 w-72 md:w-96 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">Filter by Genre</span>
+            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-0.5 rounded">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {genreTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => { onChange(tag); setOpen(false); }}
+                className={`flex items-center justify-between gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all text-left ${
+                  active === tag
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <span className="truncate">{tag}</span>
+                {active === tag && <Check className="w-3 h-3 shrink-0" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const Index = () => {
   const [fbMovies, setFbMovies] = useState<(MovieItem & { _idx: number })[] | null>(null);
@@ -168,10 +213,10 @@ const Index = () => {
       <div className="mt-5">
         <GenreFilter active={activeGenre} onChange={setActiveGenre} />
 
-        {/* ── BEST ON LUO FILM ─────────────────────────────────── */}
+        {/* ── BEST ON LUO FILM / GENRE FILTERED ───────────────── */}
         {bestAll.length > 0 ? (
           <ContentRow
-            title="Best on LUO FILM"
+            title={activeGenre === "All Videos" ? "Best on LUO FILM" : activeGenre}
             dramas={bestAll}
             icon={Sparkles}
             isGrid
@@ -179,7 +224,10 @@ const Index = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground px-4">
             <Sparkles className="w-10 h-10 mb-4 opacity-30" />
-            <p className="text-sm font-medium">No content matches this genre yet</p>
+            <p className="text-sm font-medium">No content found for "{activeGenre}"</p>
+            <button onClick={() => setActiveGenre("All Videos")} className="mt-3 text-xs text-primary underline">
+              Show all content
+            </button>
           </div>
         )}
 
