@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { Bell, X, BellOff } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Bell, X, Tv, Film, Star, Crown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // ===================== CLING SOUND (Web Audio API) =====================
 export const playClingSound = () => {
@@ -10,66 +11,180 @@ export const playClingSound = () => {
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.05);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.04);
+    osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
     osc.type = "sine";
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.6);
-    ctx.close();
+    osc.stop(ctx.currentTime + 0.7);
+    setTimeout(() => ctx.close(), 800);
   } catch (e) {}
 };
 
 // ===================== IN-APP FLOATING NOTIFICATION =====================
+export interface NotifButton {
+  label: string;
+  url: string;
+  color?: string;
+}
+
 interface InAppNotif {
   id: number;
   title: string;
   body: string;
   icon?: string;
   url?: string;
+  buttons?: NotifButton[];
+  accent?: string;
+  duration?: number;
 }
 
 let _setNotifs: ((fn: (n: InAppNotif[]) => InAppNotif[]) => void) | null = null;
 
-export const showInAppNotification = (title: string, body: string, icon?: string, url?: string) => {
+export const showInAppNotification = (
+  title: string,
+  body: string,
+  icon?: string,
+  url?: string,
+  buttons?: NotifButton[],
+  accent?: string,
+  duration = 7000
+) => {
   playClingSound();
   if (_setNotifs) {
     const id = Date.now();
-    _setNotifs(prev => [...prev, { id, title, body, icon, url }]);
+    _setNotifs(prev => [...prev.slice(-2), { id, title, body, icon, url, buttons, accent, duration }]);
     setTimeout(() => {
       _setNotifs!(prev => prev.filter(n => n.id !== id));
-    }, 5000);
+    }, duration + 300);
   }
 };
 
+// ===================== SINGLE NOTIFICATION CARD =====================
+const NotifCard = ({
+  notif,
+  onDismiss,
+}: {
+  notif: InAppNotif;
+  onDismiss: () => void;
+}) => {
+  const navigate = useNavigate();
+  const [progress, setProgress] = useState(100);
+  const duration = notif.duration || 7000;
+  const accentColor = notif.accent || "hsl(var(--primary))";
+
+  useEffect(() => {
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const pct = Math.max(0, 100 - (elapsed / duration) * 100);
+      setProgress(pct);
+      if (pct > 0) requestAnimationFrame(tick);
+    };
+    const raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [duration]);
+
+  const handleNavigate = (url: string) => {
+    onDismiss();
+    navigate(url);
+  };
+
+  return (
+    <div
+      className="relative bg-card border border-border/60 shadow-2xl rounded-2xl overflow-hidden pointer-events-auto animate-in slide-in-from-top-3 fade-in duration-400"
+      style={{ backdropFilter: "blur(16px)" }}
+    >
+      {/* Accent stripe */}
+      <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ background: accentColor }} />
+
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-border/30">
+        <div
+          className="h-full transition-none rounded-full"
+          style={{ width: `${progress}%`, background: accentColor }}
+        />
+      </div>
+
+      <div className="pl-3 pr-3 pt-3 pb-3">
+        <div className="flex items-start gap-3">
+          {/* Poster / Icon */}
+          {notif.icon ? (
+            <img
+              src={notif.icon}
+              className="w-14 h-14 rounded-xl object-cover shrink-0 shadow-lg ring-1 ring-white/10"
+              alt=""
+              onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+              style={{ background: `${accentColor}22` }}>
+              <Bell className="w-6 h-6" style={{ color: accentColor }} />
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[12px] font-bold text-foreground leading-tight">{notif.title}</p>
+              <button
+                onClick={e => { e.stopPropagation(); onDismiss(); }}
+                className="text-muted-foreground hover:text-foreground shrink-0 mt-0.5 hover:bg-muted rounded p-0.5 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">{notif.body}</p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        {notif.buttons && notif.buttons.length > 0 && (
+          <div className="flex gap-2 mt-2.5 flex-wrap">
+            {notif.buttons.map((btn, i) => (
+              <button
+                key={i}
+                onClick={() => handleNavigate(btn.url)}
+                className="flex-1 text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:opacity-90 active:scale-95 whitespace-nowrap min-w-0"
+                style={{
+                  background: btn.color || accentColor,
+                  color: "#fff",
+                }}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Clickable if no buttons */}
+        {(!notif.buttons || notif.buttons.length === 0) && notif.url && (
+          <button
+            onClick={() => handleNavigate(notif.url!)}
+            className="mt-2 text-[10px] font-bold px-3 py-1.5 rounded-lg w-full text-left transition-all hover:opacity-90"
+            style={{ background: `${accentColor}18`, color: accentColor }}
+          >
+            Watch Now →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ===================== NOTIFICATION CONTAINER =====================
 export const InAppNotificationContainer = () => {
   const [notifs, setNotifs] = useState<InAppNotif[]>([]);
   _setNotifs = setNotifs;
 
+  const dismiss = (id: number) => setNotifs(p => p.filter(n => n.id !== id));
+
   return (
-    <div className="fixed top-16 right-2 left-2 md:left-auto md:w-80 z-[200] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed top-16 right-2 left-2 md:left-auto md:w-[340px] z-[200] flex flex-col gap-2 pointer-events-none">
       {notifs.map(n => (
-        <div key={n.id}
-          onClick={() => { if (n.url) window.location.href = n.url; setNotifs(p => p.filter(x => x.id !== n.id)); }}
-          className="bg-card border border-border shadow-2xl rounded-xl p-3 flex items-start gap-3 pointer-events-auto cursor-pointer animate-in slide-in-from-top-2 fade-in duration-300"
-          style={{ backdropFilter: 'blur(12px)' }}
-        >
-          {n.icon
-            ? <img src={n.icon} className="w-10 h-10 rounded-lg object-cover shrink-0" alt="" />
-            : <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                <Bell className="w-5 h-5 text-primary" />
-              </div>
-          }
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-foreground leading-tight truncate">{n.title}</p>
-            <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2 mt-0.5">{n.body}</p>
-          </div>
-          <button onClick={e => { e.stopPropagation(); setNotifs(p => p.filter(x => x.id !== n.id)); }}
-            className="text-muted-foreground hover:text-foreground shrink-0 mt-0.5">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <NotifCard key={n.id} notif={n} onDismiss={() => dismiss(n.id)} />
       ))}
     </div>
   );
@@ -82,8 +197,8 @@ export const NotificationPrompt = () => {
   useEffect(() => {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
-
-    const timer = setTimeout(() => setShow(true), 2500);
+    if (localStorage.getItem('notification-prompt-dismissed') === 'true') return;
+    const timer = setTimeout(() => setShow(true), 3000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -92,7 +207,14 @@ export const NotificationPrompt = () => {
     const perm = await Notification.requestPermission();
     setShow(false);
     if (perm === 'granted') {
-      showInAppNotification("Notifications On!", "You'll get alerts for new movies, sports & more.", "/logo.png");
+      showInAppNotification(
+        "🔔 Notifications On!",
+        "You'll get alerts for new movies, live sports & more.",
+        "/logo.png",
+        "/",
+        [],
+        "hsl(var(--primary))"
+      );
     }
   };
 
@@ -104,7 +226,7 @@ export const NotificationPrompt = () => {
   if (!show) return null;
 
   return (
-    <div className="fixed top-14 right-2 left-2 md:left-auto md:w-72 z-[150] animate-in slide-in-from-top-2 fade-in duration-300">
+    <div className="fixed top-[60px] right-2 left-2 md:left-auto md:w-72 z-[150] animate-in slide-in-from-top-2 fade-in duration-300">
       <div className="bg-card border border-primary/30 shadow-2xl rounded-xl p-3 flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Bell className="w-4 h-4 text-primary animate-bounce" />

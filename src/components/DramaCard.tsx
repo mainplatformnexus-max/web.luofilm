@@ -127,7 +127,13 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
                 {uploadBadge}
               </div>
             )}
-            {drama.episodes && (
+            {/* Episode badge e.g. S1 EP3 */}
+            {drama.episodeBadge && (
+              <div className="absolute bottom-1 left-1 bg-black/80 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-lg border border-white/15 tracking-wide">
+                {drama.episodeBadge}
+              </div>
+            )}
+            {drama.episodes && !drama.episodeBadge && (
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-1.5 pb-1 pt-4">
                 <p className="text-white text-[9px] font-semibold drop-shadow-md">{drama.episodes}</p>
               </div>

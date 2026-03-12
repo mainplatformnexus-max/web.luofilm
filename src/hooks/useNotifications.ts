@@ -1,12 +1,18 @@
 import { useEffect, useRef } from 'react';
-import { subscribeMovies, subscribeSeries } from '@/lib/firebaseServices';
-import { showInAppNotification, playClingSound } from '@/components/NotificationPrompt';
+import { subscribeMovies, subscribeSeries, subscribeTVChannels } from '@/lib/firebaseServices';
+import { showInAppNotification, type NotifButton } from '@/components/NotificationPrompt';
 
-const sendBrowserNotification = (title: string, body: string, icon?: string, url?: string) => {
-  // Always show in-app floating notification
-  showInAppNotification(title, body, icon, url);
+const sendBrowserNotification = (
+  title: string,
+  body: string,
+  icon?: string,
+  url?: string,
+  buttons?: NotifButton[],
+  accent?: string,
+  duration?: number
+) => {
+  showInAppNotification(title, body, icon, url, buttons, accent, duration);
 
-  // Also send browser/OS notification if permitted
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     try {
       const notif = new Notification(title, {
@@ -19,77 +25,206 @@ const sendBrowserNotification = (title: string, body: string, icon?: string, url
         if (url) window.location.href = url;
         notif.close();
       };
-    } catch (e) {
-      console.warn('Browser notification failed:', e);
-    }
+    } catch (e) {}
   }
+};
+
+// Track last watched movie poster for subscription promo
+export const trackWatchedMovie = (poster: string, movieId: string) => {
+  try {
+    localStorage.setItem('lf-last-watched', JSON.stringify({ poster, movieId, ts: Date.now() }));
+  } catch (e) {}
 };
 
 export const useNotifications = () => {
   const seenIds = useRef<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tvChannelPoster = useRef<string>('/logo.png');
+  const allMoviesRef = useRef<any[]>([]);
+  const allSeriesRef = useRef<any[]>([]);
 
   useEffect(() => {
+    // Collect TV channel posters for notifications
+    const unsubTV = subscribeTVChannels((channels) => {
+      const active = channels.filter(c => c.isActive || !c.isActive);
+      if (active.length > 0) {
+        const pick = active[Math.floor(Math.random() * active.length)];
+        tvChannelPoster.current = (pick as any).posterUrl || (pick as any).logoUrl || '/logo.png';
+      }
+    });
+
     // Listen for new movies
     const unsubMovies = subscribeMovies((movies) => {
-      const latest = movies[0];
+      allMoviesRef.current = movies;
+      const sorted = [...movies].sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db_ = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return db_ - da;
+      });
+      const latest = sorted[0];
       if (!latest) return;
-      const vid = latest.id || latest.name;
+      const vid = `movie-${latest.id}`;
       if (seenIds.current.has(vid)) return;
       seenIds.current.add(vid);
-      if (seenIds.current.size === 1) return; // skip first load
+      if (seenIds.current.size <= 2) return;
 
       sendBrowserNotification(
         `🎬 New Movie: ${latest.name}`,
-        latest.description?.substring(0, 80) || 'Watch now on LUO FILM!',
+        latest.description?.substring(0, 90) || 'Just added on LUO FILM — Watch now!',
         latest.posterUrl,
-        `/watch/${latest.id}`
+        `/watch/${latest.id}`,
+        [
+          { label: '▶ Watch Now', url: `/watch/${latest.id}`, color: 'hsl(var(--primary))' },
+          { label: '🎬 All Movies', url: '/movies', color: '#333' },
+        ],
+        'hsl(var(--primary))',
+        9000
       );
     });
 
     // Listen for new series
     const unsubSeries = subscribeSeries((series) => {
-      const latest = series[0];
+      allSeriesRef.current = series;
+      const sorted = [...series].sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db_ = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return db_ - da;
+      });
+      const latest = sorted[0];
       if (!latest) return;
-      const vid = `series-${latest.id || latest.name}`;
+      const vid = `series-${latest.id}`;
       if (seenIds.current.has(vid)) return;
       seenIds.current.add(vid);
-      if (seenIds.current.size <= 2) return; // skip first load
+      if (seenIds.current.size <= 3) return;
 
       sendBrowserNotification(
         `📺 New Series: ${latest.name}`,
-        latest.description?.substring(0, 80) || 'Watch now on LUO FILM!',
+        latest.description?.substring(0, 90) || 'A brand new series is now streaming!',
         latest.posterUrl,
-        `/watch/${latest.id}`
+        `/watch/${latest.id}`,
+        [
+          { label: '▶ Watch Now', url: `/watch/${latest.id}`, color: 'hsl(var(--primary))' },
+          { label: '📺 All Series', url: '/series', color: '#333' },
+        ],
+        '#7c3aed',
+        9000
       );
     });
 
-    // Rotating engagement messages every 10 minutes
-    const messages = [
-      { title: "💎 Subscribe & Unlock All!", body: "Get unlimited movies, series & downloads. Subscribe now!", icon: '/logo.png', url: '/profile' },
-      { title: "🎬 Latest Releases", body: "New movies and episodes just dropped — watch them now!", icon: '/logo.png', url: '/movies' },
-      { title: "💰 Earn as an Agent", body: "Sell LUO FILM access and earn real money. Join our Agent program!", icon: '/logo.png', url: '/agent' },
-      { title: "📥 Save for Offline", body: "Cache your favorite videos to watch without internet!", icon: '/logo.png', url: '/downloads' },
-      { title: "📡 Live TV & Sports", body: "Watch live TV channels and upcoming sports matches!", icon: '/logo.png', url: '/tv-channel' },
+    // ── TV CHANNEL notification after 2 minutes ──
+    const tvTimer = setTimeout(() => {
+      sendBrowserNotification(
+        '📡 Watch Live TV & Sports Now!',
+        'Catch live matches, news & entertainment channels — streaming right now on LUO FILM!',
+        tvChannelPoster.current,
+        '/tv-channel',
+        [
+          { label: '📡 Go Live', url: '/tv-channel', color: '#dc2626' },
+          { label: '⚽ Sports', url: '/tv-channel', color: '#ea580c' },
+        ],
+        '#dc2626',
+        9000
+      );
+    }, 2 * 60 * 1000);
+
+    // ── Subscription promo after 5 minutes ──
+    const subTimer = setTimeout(() => {
+      const lastWatched = (() => {
+        try { return JSON.parse(localStorage.getItem('lf-last-watched') || '{}'); } catch { return {}; }
+      })();
+      const poster = lastWatched.poster || (() => {
+        const all = [...allMoviesRef.current, ...allSeriesRef.current];
+        return all.length > 0 ? all[Math.floor(Math.random() * all.length)].posterUrl : '/logo.png';
+      })();
+      sendBrowserNotification(
+        '👑 Unlock All Movies & Series!',
+        'Subscribe to LUO FILM and enjoy unlimited streaming, downloads & exclusive content with no limits!',
+        poster,
+        '/profile',
+        [
+          { label: '👑 Subscribe Now', url: '/profile', color: '#d97706' },
+          { label: 'Learn More', url: '/profile', color: '#374151' },
+        ],
+        '#d97706',
+        10000
+      );
+    }, 5 * 60 * 1000);
+
+    // ── Rotating engagement messages every 12 minutes ──
+    const engagementMessages = [
+      {
+        title: '💎 Premium Access – Subscribe Today!',
+        body: 'Get unlimited movies, series & downloads. Join thousands of happy subscribers!',
+        icon: '/logo.png',
+        url: '/profile',
+        buttons: [
+          { label: '👑 Subscribe', url: '/profile', color: '#d97706' },
+        ] as NotifButton[],
+        accent: '#d97706',
+      },
+      {
+        title: '🎬 Discover Latest Movies',
+        body: 'Fresh movies just added! Explore the full library on LUO FILM.',
+        icon: '/logo.png',
+        url: '/movies',
+        buttons: [
+          { label: '🎬 Movies', url: '/movies', color: 'hsl(var(--primary))' },
+          { label: '📺 Series', url: '/series', color: '#7c3aed' },
+        ] as NotifButton[],
+        accent: 'hsl(var(--primary))',
+      },
+      {
+        title: '💰 Earn with the Agent Program',
+        body: 'Sell LUO FILM subscriptions and earn real money. Join our growing Agent network!',
+        icon: '/logo.png',
+        url: '/agent',
+        buttons: [
+          { label: '💰 Become an Agent', url: '/agent', color: '#16a34a' },
+        ] as NotifButton[],
+        accent: '#16a34a',
+      },
+      {
+        title: '📥 Download & Watch Offline',
+        body: 'Save your favorite videos and watch them without internet, anytime, anywhere!',
+        icon: '/logo.png',
+        url: '/downloads',
+        buttons: [
+          { label: '📥 My Downloads', url: '/downloads', color: '#ea580c' },
+        ] as NotifButton[],
+        accent: '#ea580c',
+      },
+      {
+        title: '📡 Live TV — Watch Now!',
+        body: 'Sports, news & entertainment are streaming live right now. Don\'t miss out!',
+        icon: tvChannelPoster.current,
+        url: '/tv-channel',
+        buttons: [
+          { label: '📡 Go Live', url: '/tv-channel', color: '#dc2626' },
+        ] as NotifButton[],
+        accent: '#dc2626',
+      },
     ];
     let msgIdx = 0;
 
-    // Show first engagement message after 3 minutes
-    const firstTimer = setTimeout(() => {
-      sendBrowserNotification(messages[msgIdx].title, messages[msgIdx].body, messages[msgIdx].icon, messages[msgIdx].url);
-      msgIdx = (msgIdx + 1) % messages.length;
+    const firstEngTimer = setTimeout(() => {
+      const m = engagementMessages[msgIdx];
+      sendBrowserNotification(m.title, m.body, m.icon, m.url, m.buttons, m.accent, 9000);
+      msgIdx = (msgIdx + 1) % engagementMessages.length;
 
-      // Then every 10 minutes
       intervalRef.current = setInterval(() => {
-        sendBrowserNotification(messages[msgIdx].title, messages[msgIdx].body, messages[msgIdx].icon, messages[msgIdx].url);
-        msgIdx = (msgIdx + 1) % messages.length;
-      }, 10 * 60 * 1000);
-    }, 3 * 60 * 1000);
+        const msg = engagementMessages[msgIdx];
+        sendBrowserNotification(msg.title, msg.body, msg.icon, msg.url, msg.buttons, msg.accent, 9000);
+        msgIdx = (msgIdx + 1) % engagementMessages.length;
+      }, 12 * 60 * 1000);
+    }, 8 * 60 * 1000);
 
     return () => {
       unsubMovies();
       unsubSeries();
-      clearTimeout(firstTimer);
+      unsubTV();
+      clearTimeout(tvTimer);
+      clearTimeout(subTimer);
+      clearTimeout(firstEngTimer);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
@@ -101,4 +236,24 @@ export const useNotifications = () => {
   };
 
   return { requestPermission };
+};
+
+// ── Welcome notification (called once per user session) ──
+export const showWelcomeNotification = (
+  username: string,
+  randomPoster: string
+) => {
+  const key = `lf-welcomed-${Date.now().toString(36).slice(-4)}`;
+  sendBrowserNotification(
+    `👋 Welcome, ${username}!`,
+    `Thank you for joining luofilm.site! Explore all your favourite movies & series now.`,
+    randomPoster,
+    '/movies',
+    [
+      { label: '🎬 Movies', url: '/movies', color: 'hsl(var(--primary))' },
+      { label: '📺 Series', url: '/series', color: '#7c3aed' },
+    ],
+    'hsl(var(--primary))',
+    10000
+  );
 };

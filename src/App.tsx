@@ -28,10 +28,47 @@ import Settings from "./pages/Settings";
 import Downloads from "./pages/Downloads";
 import NotFound from "./pages/NotFound";
 import { useNotificationTimer } from "./hooks/useNotificationTimer";
-import { useNotifications } from "./hooks/useNotifications";
+import { useNotifications, showWelcomeNotification } from "./hooks/useNotifications";
 import { NotificationPrompt, InAppNotificationContainer } from "./components/NotificationPrompt";
+import { subscribeMovies, subscribeSeries } from "./lib/firebaseServices";
+import { useEffect, useRef } from "react";
 
 const queryClient = new QueryClient();
+
+const useWelcomeNotification = () => {
+  const { user } = useAuth();
+  const prevUid = useRef<string | null>(null);
+  const allPostersRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    const unsubM = subscribeMovies(movies => {
+      const posters = movies.map(m => m.posterUrl).filter(Boolean) as string[];
+      allPostersRef.current = [...allPostersRef.current.filter(p => !posters.includes(p)), ...posters];
+    });
+    const unsubS = subscribeSeries(series => {
+      const posters = series.map(s => s.posterUrl).filter(Boolean) as string[];
+      allPostersRef.current = [...allPostersRef.current.filter(p => !posters.includes(p)), ...posters];
+    });
+    return () => { unsubM(); unsubS(); };
+  }, []);
+
+  useEffect(() => {
+    if (!user) { prevUid.current = null; return; }
+    if (prevUid.current === user.uid) return;
+    prevUid.current = user.uid;
+
+    const key = `lf-welcomed-${user.uid}`;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+
+    const name = user.displayName?.split(' ')[0] || 'there';
+    const randomPoster = allPostersRef.current.length > 0
+      ? allPostersRef.current[Math.floor(Math.random() * allPostersRef.current.length)]
+      : '/logo.png';
+
+    setTimeout(() => showWelcomeNotification(name, randomPoster), 2500);
+  }, [user]);
+};
 
 const AppLayout = () => {
   const location = useLocation();
@@ -39,6 +76,7 @@ const AppLayout = () => {
   const isAudiencePage = location.pathname.startsWith("/a/");
   useNotificationTimer();
   useNotifications();
+  useWelcomeNotification();
 
   return (
     <>

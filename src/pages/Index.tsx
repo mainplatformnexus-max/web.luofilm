@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Film, Tv, TrendingUp, Clock, Flame, Heart, Crown, Star, Sparkles, ListOrdered } from "lucide-react";
+import { Film, Tv, TrendingUp, Clock, Flame, Heart, Crown, Star, Sparkles, ListOrdered, Clapperboard } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
 import ContentRow from "@/components/ContentRow";
 import GenreTags from "@/components/GenreTags";
 import LogoLoader from "@/components/LogoLoader";
 
-import { subscribeMovies, subscribeSeries } from "@/lib/firebaseServices";
-import type { MovieItem, SeriesItem } from "@/data/adminData";
+import { subscribeMovies, subscribeSeries, subscribeEpisodes } from "@/lib/firebaseServices";
+import type { MovieItem, SeriesItem, EpisodeItem } from "@/data/adminData";
 import type { Drama } from "@/data/dramas";
 
 const ALL_CATEGORIES = [
@@ -47,6 +47,7 @@ const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
 const Index = () => {
   const [fbMovies, setFbMovies] = useState<(MovieItem & { _idx: number })[] | null>(null);
   const [fbSeries, setFbSeries] = useState<(SeriesItem & { _idx: number })[] | null>(null);
+  const [fbEpisodes, setFbEpisodes] = useState<EpisodeItem[]>([]);
 
   useEffect(() => {
     const unsub1 = subscribeMovies((movies) =>
@@ -55,6 +56,7 @@ const Index = () => {
     const unsub2 = subscribeSeries((series) =>
       setFbSeries(series.map((s, i) => ({ ...s, _idx: i + 1000 })))
     );
+    const unsub3 = subscribeEpisodes((eps) => setFbEpisodes(eps));
 
     // Add SEO meta tags dynamically
     document.title = "LUO FILM - Watch Movies, Series & Live Sports Online";
@@ -63,7 +65,7 @@ const Index = () => {
       metaDesc.setAttribute("content", "LUO FILM is the #1 platform for streaming the latest movies, drama series, live football, and TV channels. Join our Agent program to earn.");
     }
 
-    return () => { unsub1(); unsub2(); };
+    return () => { unsub1(); unsub2(); unsub3(); };
   }, []);
 
   const loading = fbMovies === null || fbSeries === null;
@@ -144,10 +146,34 @@ const Index = () => {
     return (a.displayOrder || 0) - (b.displayOrder || 0);
   });
 
+  // Build new episodes list — each episode as a Drama card using series poster + season/ep badge
+  const newEpisodes: Drama[] = fbEpisodes.length > 0 && fbSeries
+    ? [...fbEpisodes]
+        .sort((a, b) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db_ = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return db_ - da;
+        })
+        .slice(0, 20)
+        .map((ep, i) => {
+          const parentSeries = fbSeries!.find(s => s.id === ep.seriesId);
+          const badge = `S${ep.seasonNumber || 1} EP${ep.episodeNumber || 1}`;
+          return {
+            id: i + 9000,
+            title: ep.seriesName || ep.name,
+            image: parentSeries?.posterUrl || "/placeholder.svg",
+            firebaseId: ep.seriesId,
+            episodeBadge: badge,
+            createdAt: ep.createdAt,
+          } as Drama;
+        })
+    : [];
+
   return (
     <div className="min-h-screen bg-background">
       <HeroBanner />
       <div className="mt-6">
+        {newEpisodes.length > 0 && <ContentRow title="New Episodes" dramas={newEpisodes} icon={Clapperboard} isGrid />}
         {onlyMovies.length > 0 && <ContentRow title="Movies" dramas={onlyMovies} icon={Film} isGrid />}
         {onlySeries.length > 0 && <ContentRow title="Series" dramas={onlySeries} icon={Tv} isGrid />}
         {popular.length > 0 && <ContentRow title="Popular on LUO FILM" dramas={popular} icon={TrendingUp} isGrid />}
