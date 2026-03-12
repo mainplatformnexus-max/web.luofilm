@@ -28,7 +28,8 @@ import Settings from "./pages/Settings";
 import Downloads from "./pages/Downloads";
 import NotFound from "./pages/NotFound";
 import { useNotificationTimer } from "./hooks/useNotificationTimer";
-import { NotificationPrompt } from "./components/NotificationPrompt";
+import { useNotifications } from "./hooks/useNotifications";
+import { NotificationPrompt, InAppNotificationContainer } from "./components/NotificationPrompt";
 
 const queryClient = new QueryClient();
 
@@ -37,10 +38,12 @@ const AppLayout = () => {
   const { needsPhoneSetup } = useAuth();
   const isAudiencePage = location.pathname.startsWith("/a/");
   useNotificationTimer();
+  useNotifications();
 
   return (
     <>
       <ActivityTrackerProvider />
+      <InAppNotificationContainer />
       <NotificationPrompt />
       <PhoneSetupModal isOpen={needsPhoneSetup} />
       {!isAudiencePage && <Header />}

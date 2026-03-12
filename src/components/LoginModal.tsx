@@ -67,7 +67,18 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
       toast({ title: "Welcome back!", description: "You are now logged in." });
       handleClose();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Invalid credentials", variant: "destructive" });
+      // Handle Google-linked accounts trying password login
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        toast({
+          title: "Login Failed",
+          description: "This account may be linked to Google. Try signing in with Google instead.",
+          variant: "destructive"
+        });
+      } else if (err.code === 'auth/invalid-email') {
+        toast({ title: "Invalid phone", description: "Please enter a valid phone number.", variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: err.message || "Invalid credentials", variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
