@@ -22,6 +22,7 @@ import { videoCacheService } from "@/lib/videoCacheService";
 import { getPlaybackUrl } from "@/lib/offlinePlayerUtils";
 import { autoCacheService } from "@/lib/autoCacheService";
 import { networkDetection } from "@/lib/networkDetection";
+import { trackWatchedMovie } from "@/hooks/useNotifications";
 
 // ==================== SPORT WATCH ====================
 const SportWatch = () => {
@@ -393,6 +394,13 @@ const Watch = () => {
     const unsub = subscribeWatchLater(user.uid, setWatchLaterItems);
     return unsub;
   }, [user]);
+
+  // Track last watched for notification subscription promo
+  useEffect(() => {
+    if (drama?.image && drama.firebaseId) {
+      trackWatchedMovie(drama.image, drama.firebaseId);
+    }
+  }, [drama?.firebaseId]);
 
   // Dynamic SEO implementation - Update meta tags on mount and when content changes
   useEffect(() => {

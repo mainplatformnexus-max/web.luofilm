@@ -112,6 +112,11 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
                 </div>
               </div>
             )}
+            {drama.isAdult && !isStillAgent && (
+              <div className="absolute top-0 left-0 bg-red-600/95 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-br-sm shadow-lg">
+                18+
+              </div>
+            )}
             {isStillAgent && (
               <div className="absolute top-1.5 right-1.5 bg-accent/95 backdrop-blur-sm text-accent-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-sm shadow-lg">
                 🔥 Agent Only

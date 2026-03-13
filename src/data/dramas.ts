@@ -30,6 +30,7 @@ export interface Drama {
   displayOrder?: number;
   createdAt?: string;
   episodeBadge?: string;
+  isAdult?: boolean;
 }
 
 const images = [drama1, drama2, drama3, drama4, drama5, drama6, drama7, drama8];

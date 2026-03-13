@@ -30,6 +30,7 @@ const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
   categories: item.categories,
   displayOrder: item.displayOrder,
   createdAt: item.createdAt,
+  isAdult: "isAdult" in item ? (item as any).isAdult : false,
 });
 
 const isStillActive = (d: Drama) => {
@@ -83,8 +84,20 @@ const GenreFilter = ({ active, onChange }: { active: string; onChange: (g: strin
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
+          {/* All Videos reset row */}
+          <button
+            onClick={() => { onChange("All Videos"); setOpen(false); }}
+            className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-[10px] font-semibold mb-2 transition-all ${
+              active === "All Videos"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <span>All Videos</span>
+            {active === "All Videos" && <Check className="w-3 h-3" />}
+          </button>
           <div className="grid grid-cols-3 gap-1.5">
-            {genreTags.map(tag => (
+            {genreTags.filter(t => t !== "All Videos").map(tag => (
               <button
                 key={tag}
                 onClick={() => { onChange(tag); setOpen(false); }}
@@ -172,14 +185,12 @@ const Index = () => {
     });
   }, [allMovieDramas, allSeriesDramas, episodeDramas, activeGenre]);
 
-  // Rankings — top 100 sorted by rating desc
+  // Rankings — top 100 sorted by rating desc (include all, unrated go to bottom)
   const rankings = useMemo<Drama[]>(() => {
-    const base = [...allMovieDramas, ...allSeriesDramas]
-      .filter(d => (d.rating ?? 0) > 0)
+    return [...allMovieDramas, ...allSeriesDramas]
       .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
       .slice(0, 100)
       .map((d, i) => ({ ...d, rank: i + 1 }));
-    return base;
   }, [allMovieDramas, allSeriesDramas]);
 
   // Agent exclusives — still within 5-day agent window
