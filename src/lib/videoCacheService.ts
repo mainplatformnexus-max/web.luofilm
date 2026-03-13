@@ -246,7 +246,14 @@ class VideoCacheService {
     await this.addVideo(video);
 
     try {
-      const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      // Try default fetch first (handles Firebase Storage and CDN URLs)
+      let response: Response;
+      try {
+        response = await fetch(url, { redirect: 'follow' });
+      } catch {
+        // Fallback: explicit cors mode with no credentials
+        response = await fetch(url, { mode: 'cors', credentials: 'omit', redirect: 'follow' });
+      }
       if (!response.ok) throw new Error(`Network error: ${response.status}`);
 
       const reader = response.body?.getReader();

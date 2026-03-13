@@ -266,15 +266,26 @@ const Watch = () => {
     const loadContent = async () => {
       setIsLoading(true);
       
-      // Check if offline mode
+      // Check if offline mode (coming from Downloads page)
       if (offlineState?.isOffline && offlineState?.cacheId) {
         const cached = await videoCacheService.getVideo(offlineState.cacheId);
         if (cached) {
+          // Try to load actual downloaded blob for true offline playback
+          let playUrl = cached.url;
+          try {
+            const blob = await videoCacheService.getVideoBlob(offlineState.cacheId);
+            if (blob && blob.size > 0) {
+              playUrl = URL.createObjectURL(blob);
+              setCachedVideoUrl(playUrl);
+            }
+          } catch {
+            // No blob — stream from online URL
+          }
           setDrama({
             id: 9999,
             title: cached.title,
             image: cached.posterUrl || "/placeholder.svg",
-            streamLink: cached.url,
+            streamLink: playUrl,
             firebaseId: cached.id,
             genre: "",
             rating: 0,
@@ -708,7 +719,8 @@ const Watch = () => {
   // Require subscription to play & download (Admins bypass)
   const isAdmin = userDoc?.role === "admin" || user?.email === "mainplatform.nexus@gmail.com";
   const hasValidSubscription = isAdmin || hasSubscription;
-  const requiresSubscription = !user || !hasValidSubscription;
+  // Bypass subscription gate when playing from Downloads (user already downloaded it)
+  const requiresSubscription = (!user || !hasValidSubscription) && !offlineState?.isOffline;
 
   return (
     <div className="min-h-screen bg-background">
