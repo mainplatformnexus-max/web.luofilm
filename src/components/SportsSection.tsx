@@ -156,9 +156,9 @@ const SportsSection = () => {
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "all", label: "All", count: matches.length },
-    { key: "live", label: "🔴 Live", count: liveCount },
-    { key: "upcoming", label: "⏳ Upcoming", count: upcomingCount },
-    { key: "ended", label: "✅ FT", count: endedCount },
+    { key: "live", label: "Live", count: liveCount },
+    { key: "upcoming", label: "Upcoming", count: upcomingCount },
+    { key: "ended", label: "FT", count: endedCount },
   ];
 
   return (

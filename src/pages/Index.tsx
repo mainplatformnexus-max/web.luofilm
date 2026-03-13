@@ -159,6 +159,8 @@ const Index = () => {
           createdAt: ep.createdAt,
           genre: parent?.genre,
           rating: parent?.rating,
+          targetEpisodeNumber: ep.episodeNumber || 1,
+          targetEpisodeId: ep.id,
         } as Drama;
       });
   }, [fbEpisodes, fbSeries]);
@@ -220,9 +222,8 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <HeroBanner />
 
-      {/* Genre filter — right below hero */}
+      {/* All sections — genre filter embedded in the first section header */}
       <div className="mt-5">
-        <GenreFilter active={activeGenre} onChange={setActiveGenre} />
 
         {/* ── BEST ON LUO FILM / GENRE FILTERED ───────────────── */}
         {bestAll.length > 0 ? (
@@ -231,14 +232,24 @@ const Index = () => {
             dramas={bestAll}
             icon={Sparkles}
             isGrid
+            headerRight={<GenreFilter active={activeGenre} onChange={setActiveGenre} />}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground px-4">
-            <Sparkles className="w-10 h-10 mb-4 opacity-30" />
-            <p className="text-sm font-medium">No content found for "{activeGenre}"</p>
-            <button onClick={() => setActiveGenre("All Videos")} className="mt-3 text-xs text-primary underline">
-              Show all content
-            </button>
+          <div className="px-4 md:px-10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />
+                <h2 className="text-[11px] md:text-xs font-semibold tracking-tight text-foreground">{activeGenre}</h2>
+              </div>
+              <GenreFilter active={activeGenre} onChange={setActiveGenre} />
+            </div>
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <Sparkles className="w-10 h-10 mb-4 opacity-30" />
+              <p className="text-sm font-medium">No content found for "{activeGenre}"</p>
+              <button onClick={() => setActiveGenre("All Videos")} className="mt-3 text-xs text-primary underline">
+                Show all content
+              </button>
+            </div>
           </div>
         )}
 

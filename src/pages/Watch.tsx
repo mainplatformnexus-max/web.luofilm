@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Play, MessageSquare, Clock, Share2, Monitor, Smartphone, ChevronRight, Star, ArrowLeft, Download, Send, Trash2, Lock, HardDrive } from "lucide-react";
+import { Play, MessageSquare, Clock, Share2, Monitor, Smartphone, ChevronRight, Star, ArrowLeft, Download, Send, Trash2, Lock, HardDrive, Film, Flame, Wifi, CheckCircle2 } from "lucide-react";
 import { subscribeMovies, subscribeSeries, getEpisodesBySeries, subscribeComments, addComment, deleteComment, addWatchLater, subscribeWatchLater, deleteWatchLater, subscribeEpisodes, getUserByUid } from "@/lib/firebaseServices";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -229,6 +229,8 @@ const Watch = () => {
     isOriginal?: boolean;
     isAgent?: boolean;
     agentMarkedAt?: string | null;
+    targetEpisodeNumber?: number;
+    targetEpisodeId?: string;
   } | null;
 
   // Check user subscription status
@@ -368,17 +370,25 @@ const Watch = () => {
   useEffect(() => {
     const contentId = firebaseState?.firebaseId || id;
     if (!contentId || isSport) return;
+    const targetEpNum = firebaseState?.targetEpisodeNumber;
+    const targetEpId = firebaseState?.targetEpisodeId;
     const unsub = subscribeEpisodes((allEps) => {
       const filtered = allEps
         .filter(ep => ep.seriesId === contentId)
         .sort((a, b) => (a.episodeNumber || 0) - (b.episodeNumber || 0));
       setEpisodes(filtered);
-      if (!currentEpisode && filtered.length > 0 && filtered[0].streamLink) {
-        setCurrentEpisode(filtered[0]);
+      if (!currentEpisode && filtered.length > 0) {
+        // Pre-select the episode that was clicked on the homepage
+        const target =
+          (targetEpId && filtered.find(ep => ep.id === targetEpId)) ||
+          (targetEpNum && filtered.find(ep => ep.episodeNumber === targetEpNum)) ||
+          filtered.find(ep => ep.streamLink) ||
+          filtered[0];
+        if (target) setCurrentEpisode(target);
       }
     });
     return unsub;
-  }, [id, firebaseState?.firebaseId, isSport]);
+  }, [id, firebaseState?.firebaseId, firebaseState?.targetEpisodeNumber, firebaseState?.targetEpisodeId, isSport]);
 
   // Subscribe to comments
   useEffect(() => {
@@ -464,7 +474,7 @@ const Watch = () => {
   if (!drama) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
-        <span className="text-4xl">🎬</span>
+        <Film className="w-12 h-12 text-muted-foreground/40" />
         <p className="text-muted-foreground text-sm">Content not found</p>
         <button onClick={() => navigate(-1)} className="text-primary text-xs hover:underline">Go back</button>
       </div>
@@ -656,7 +666,7 @@ const Watch = () => {
         'original',
         (progress) => setCacheProgress(progress)
       );
-      toast({ title: "✅ Saved for Offline!", description: "Watch anytime from your Downloads — even without internet." });
+      toast({ title: "Saved for Offline", description: "Watch anytime from your Downloads — even without internet." });
     } catch (error: any) {
       // If download fails, try saving with proxy URL
       try {
@@ -671,7 +681,7 @@ const Watch = () => {
           'original',
           (progress) => setCacheProgress(progress)
         );
-        toast({ title: "✅ Saved for Offline!", description: "Watch anytime from your Downloads." });
+        toast({ title: "Saved for Offline", description: "Watch anytime from your Downloads." });
       } catch {
         toast({
           title: "Download Failed",
@@ -740,8 +750,8 @@ const Watch = () => {
                   />
                   {/* Auto-cache on WiFi when video plays */}
                   {networkDetection.isWifi() && (
-                    <div className="text-xs text-muted-foreground text-center py-1">
-                      📡 Auto-caching video on WiFi...
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground text-center py-1">
+                      <Wifi className="w-3 h-3 text-green-500" /> Auto-caching video on WiFi...
                     </div>
                   )}
                 </div>
@@ -898,7 +908,7 @@ const Watch = () => {
               {drama.isHotDrama && <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">Hot</span>}
               {drama.isOriginal && <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">Original</span>}
               {drama.isVip && <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">VIP</span>}
-              {isStillOnAgent && <span className="bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">🔥 Agent Exclusive</span>}
+              {isStillOnAgent && <span className="bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5"><Flame className="w-2.5 h-2.5 inline" /> Agent Exclusive</span>}
             </div>
 
             {/* Genre Tags */}

@@ -1,5 +1,5 @@
 import { ChevronRight, ChevronLeft } from "lucide-react";
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Drama } from "@/data/dramas";
 import type { LucideIcon } from "lucide-react";
@@ -33,9 +33,10 @@ interface ContentRowProps {
   titleColor?: string;
   icon?: LucideIcon;
   isGrid?: boolean;
+  headerRight?: ReactNode;
 }
 
-const ContentRow = ({ title, dramas, showRank, titleColor, icon: Icon, isGrid }: ContentRowProps) => {
+const ContentRow = ({ title, dramas, showRank, titleColor, icon: Icon, isGrid, headerRight }: ContentRowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const sectionId = TITLE_TO_SECTION[title];
@@ -55,18 +56,21 @@ const ContentRow = ({ title, dramas, showRank, titleColor, icon: Icon, isGrid }:
 
   return (
     <section className="px-4 md:px-10 mb-6">
-      <div
-        className={`flex items-center gap-1.5 mb-3 ${sectionId ? "cursor-pointer group/title" : ""}`}
-        onClick={handleSectionClick}
-      >
-        {Icon && <Icon className="w-3 h-3 md:w-3.5 md:h-3.5" style={{ color: titleColor || "hsl(var(--primary))" }} />}
-        <h2
-          className="text-[11px] md:text-xs font-semibold tracking-tight"
-          style={{ color: titleColor || "hsl(var(--foreground))" }}
+      <div className="flex items-center justify-between mb-3">
+        <div
+          className={`flex items-center gap-1.5 ${sectionId ? "cursor-pointer group/title" : ""}`}
+          onClick={handleSectionClick}
         >
-          {title}
-        </h2>
-        <ChevronRight className={`w-3 h-3 text-muted-foreground ${sectionId ? "group-hover/title:text-primary transition-colors" : ""}`} />
+          {Icon && <Icon className="w-3 h-3 md:w-3.5 md:h-3.5" style={{ color: titleColor || "hsl(var(--primary))" }} />}
+          <h2
+            className="text-[11px] md:text-xs font-semibold tracking-tight"
+            style={{ color: titleColor || "hsl(var(--foreground))" }}
+          >
+            {title}
+          </h2>
+          <ChevronRight className={`w-3 h-3 text-muted-foreground ${sectionId ? "group-hover/title:text-primary transition-colors" : ""}`} />
+        </div>
+        {headerRight && <div onClick={e => e.stopPropagation()}>{headerRight}</div>}
       </div>
 
       <div className="relative group/row">

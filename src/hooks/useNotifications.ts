@@ -69,13 +69,13 @@ export const useNotifications = () => {
       if (seenIds.current.size <= 2) return;
 
       sendBrowserNotification(
-        `🎬 New Movie: ${latest.name}`,
+        `New Movie: ${latest.name}`,
         latest.description?.substring(0, 90) || 'Just added on LUO FILM — Watch now!',
         latest.posterUrl,
         `/watch/${latest.id}`,
         [
-          { label: '▶ Watch Now', url: `/watch/${latest.id}`, color: 'hsl(var(--primary))' },
-          { label: '🎬 All Movies', url: '/movies', color: '#333' },
+          { label: 'Watch Now', url: `/watch/${latest.id}`, color: 'hsl(var(--primary))' },
+          { label: 'All Movies', url: '/movies', color: '#333' },
         ],
         'hsl(var(--primary))',
         9000
@@ -98,36 +98,36 @@ export const useNotifications = () => {
       if (seenIds.current.size <= 3) return;
 
       sendBrowserNotification(
-        `📺 New Series: ${latest.name}`,
+        `New Series: ${latest.name}`,
         latest.description?.substring(0, 90) || 'A brand new series is now streaming!',
         latest.posterUrl,
         `/watch/${latest.id}`,
         [
-          { label: '▶ Watch Now', url: `/watch/${latest.id}`, color: 'hsl(var(--primary))' },
-          { label: '📺 All Series', url: '/series', color: '#333' },
+          { label: 'Watch Now', url: `/watch/${latest.id}`, color: 'hsl(var(--primary))' },
+          { label: 'All Series', url: '/series', color: '#333' },
         ],
         '#7c3aed',
         9000
       );
     });
 
-    // ── TV CHANNEL notification after 2 minutes ──
+    // TV CHANNEL notification after 2 minutes
     const tvTimer = setTimeout(() => {
       sendBrowserNotification(
-        '📡 Watch Live TV & Sports Now!',
+        'Watch Live TV & Sports Now',
         'Catch live matches, news & entertainment channels — streaming right now on LUO FILM!',
         tvChannelPoster.current,
         '/tv-channel',
         [
-          { label: '📡 Go Live', url: '/tv-channel', color: '#dc2626' },
-          { label: '⚽ Sports', url: '/tv-channel', color: '#ea580c' },
+          { label: 'Go Live', url: '/tv-channel', color: '#dc2626' },
+          { label: 'Sports', url: '/tv-channel', color: '#ea580c' },
         ],
         '#dc2626',
         9000
       );
     }, 2 * 60 * 1000);
 
-    // ── Subscription promo after 5 minutes ──
+    // Subscription promo after 5 minutes
     const subTimer = setTimeout(() => {
       const lastWatched = (() => {
         try { return JSON.parse(localStorage.getItem('lf-last-watched') || '{}'); } catch { return {}; }
@@ -137,70 +137,70 @@ export const useNotifications = () => {
         return all.length > 0 ? all[Math.floor(Math.random() * all.length)].posterUrl : '/logo.png';
       })();
       sendBrowserNotification(
-        '👑 Unlock All Movies & Series!',
+        'Unlock All Movies & Series',
         'Subscribe to LUO FILM and enjoy unlimited streaming, downloads & exclusive content with no limits!',
         poster,
         'SUBSCRIBE_MODAL',
         [
-          { label: '👑 Subscribe Now', url: 'SUBSCRIBE_MODAL', color: '#d97706' },
-          { label: '🎬 Browse Free', url: '/movies', color: '#374151' },
+          { label: 'Subscribe Now', url: 'SUBSCRIBE_MODAL', color: '#d97706' },
+          { label: 'Browse Free', url: '/movies', color: '#374151' },
         ],
         '#d97706',
         10000
       );
     }, 5 * 60 * 1000);
 
-    // ── Rotating engagement messages every 12 minutes ──
+    // Rotating engagement messages every 12 minutes
     const engagementMessages = [
       {
-        title: '💎 Premium Access – Subscribe Today!',
+        title: 'Premium Access – Subscribe Today',
         body: 'Get unlimited movies, series & downloads. Join thousands of happy subscribers!',
         icon: '/logo.png',
         url: 'SUBSCRIBE_MODAL',
         buttons: [
-          { label: '👑 Subscribe Now', url: 'SUBSCRIBE_MODAL', color: '#d97706' },
-          { label: '🎬 Movies', url: '/movies', color: '#1d4ed8' },
+          { label: 'Subscribe Now', url: 'SUBSCRIBE_MODAL', color: '#d97706' },
+          { label: 'Movies', url: '/movies', color: '#1d4ed8' },
         ] as NotifButton[],
         accent: '#d97706',
       },
       {
-        title: '🎬 Discover Latest Movies',
+        title: 'Discover Latest Movies',
         body: 'Fresh movies just added! Explore the full library on LUO FILM.',
         icon: '/logo.png',
         url: '/movies',
         buttons: [
-          { label: '🎬 Movies', url: '/movies', color: 'hsl(var(--primary))' },
-          { label: '📺 Series', url: '/series', color: '#7c3aed' },
+          { label: 'Movies', url: '/movies', color: 'hsl(var(--primary))' },
+          { label: 'Series', url: '/series', color: '#7c3aed' },
         ] as NotifButton[],
         accent: 'hsl(var(--primary))',
       },
       {
-        title: '💰 Earn with the Agent Program',
+        title: 'Earn with the Agent Program',
         body: 'Sell LUO FILM subscriptions and earn real money. Join our growing Agent network!',
         icon: '/logo.png',
         url: '/agent',
         buttons: [
-          { label: '💰 Become an Agent', url: '/agent', color: '#16a34a' },
+          { label: 'Become an Agent', url: '/agent', color: '#16a34a' },
         ] as NotifButton[],
         accent: '#16a34a',
       },
       {
-        title: '📥 Download & Watch Offline',
+        title: 'Download & Watch Offline',
         body: 'Save your favorite videos and watch them without internet, anytime, anywhere!',
         icon: '/logo.png',
         url: '/downloads',
         buttons: [
-          { label: '📥 My Downloads', url: '/downloads', color: '#ea580c' },
+          { label: 'My Downloads', url: '/downloads', color: '#ea580c' },
         ] as NotifButton[],
         accent: '#ea580c',
       },
       {
-        title: '📡 Live TV — Watch Now!',
+        title: 'Live TV — Watch Now',
         body: 'Sports, news & entertainment are streaming live right now. Don\'t miss out!',
         icon: tvChannelPoster.current,
         url: '/tv-channel',
         buttons: [
-          { label: '📡 Go Live', url: '/tv-channel', color: '#dc2626' },
+          { label: 'Go Live', url: '/tv-channel', color: '#dc2626' },
         ] as NotifButton[],
         accent: '#dc2626',
       },
@@ -239,20 +239,19 @@ export const useNotifications = () => {
   return { requestPermission };
 };
 
-// ── Welcome notification (called once per user session) ──
+// Welcome notification (called once per user session)
 export const showWelcomeNotification = (
   username: string,
   randomPoster: string
 ) => {
-  const key = `lf-welcomed-${Date.now().toString(36).slice(-4)}`;
   sendBrowserNotification(
-    `👋 Welcome, ${username}!`,
+    `Welcome, ${username}!`,
     `Thank you for joining luofilm.site! Explore all your favourite movies & series now.`,
     randomPoster,
     '/movies',
     [
-      { label: '🎬 Movies', url: '/movies', color: 'hsl(var(--primary))' },
-      { label: '📺 Series', url: '/series', color: '#7c3aed' },
+      { label: 'Movies', url: '/movies', color: 'hsl(var(--primary))' },
+      { label: 'Series', url: '/series', color: '#7c3aed' },
     ],
     'hsl(var(--primary))',
     10000

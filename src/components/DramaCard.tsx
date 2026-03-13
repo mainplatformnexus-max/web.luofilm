@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Flame } from "lucide-react";
 import type { Drama } from "@/data/dramas";
 import SubscribeModal from "@/components/SubscribeModal";
-import { formatDistanceToNow, parseISO, differenceInDays } from "date-fns";
+import { parseISO, differenceInDays } from "date-fns";
 
 interface DramaCardProps {
   drama: Drama;
@@ -67,6 +68,8 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
           isOriginal: drama.isOriginal,
           isAgent: drama.isAgent,
           agentMarkedAt: drama.agentMarkedAt,
+          targetEpisodeNumber: drama.targetEpisodeNumber,
+          targetEpisodeId: drama.targetEpisodeId,
         }
       });
     } else {
@@ -118,8 +121,8 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
               </div>
             )}
             {isStillAgent && (
-              <div className="absolute top-1.5 right-1.5 bg-accent/95 backdrop-blur-sm text-accent-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-sm shadow-lg">
-                🔥 Agent Only
+              <div className="absolute top-1.5 right-1.5 bg-accent/95 backdrop-blur-sm text-accent-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-sm shadow-lg flex items-center gap-0.5">
+                <Flame className="w-2.5 h-2.5" /> Agent Only
               </div>
             )}
             {!isStillAgent && drama.badge && (

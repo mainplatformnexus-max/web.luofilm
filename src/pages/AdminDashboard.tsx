@@ -398,7 +398,7 @@ const MoviesSection = ({ movies, search }: { movies: MovieItem[]; search: string
           <CheckboxField label="Hot Drama" checked={!!form.isHotDrama} onChange={v => setForm({ ...form, isHotDrama: v })} />
           <CheckboxField label="Original" checked={!!form.isOriginal} onChange={v => setForm({ ...form, isOriginal: v })} />
           <CheckboxField label="VIP" checked={!!form.isVip} onChange={v => setForm({ ...form, isVip: v })} />
-          <CheckboxField label="🔥 Agent Exclusive (5 days)" checked={!!form.isAgent} onChange={v => setForm({ ...form, isAgent: v, agentMarkedAt: v ? new Date().toISOString() : null })} />
+          <CheckboxField label="Agent Exclusive (5 days)" checked={!!form.isAgent} onChange={v => setForm({ ...form, isAgent: v, agentMarkedAt: v ? new Date().toISOString() : null })} />
         </div>
       </div>
       <div>
@@ -506,7 +506,7 @@ const EpisodesSection = ({ episodes, series, search }: { episodes: EpisodeItem[]
       <FormField label="Episode Number" value={String(form.episodeNumber || "")} onChange={v => setForm({ ...form, episodeNumber: parseInt(v) || 1 })} />
       <FormField label="Stream Link (Video URL)" value={form.streamLink || ""} onChange={v => setForm({ ...form, streamLink: v })} />
       <FormField label="Download Link (optional)" value={form.downloadLink || ""} onChange={v => setForm({ ...form, downloadLink: v })} />
-      <CheckboxField label="🔥 Agent Exclusive (5 days)" checked={!!form.isAgent} onChange={v => setForm({ ...form, isAgent: v, agentMarkedAt: v ? new Date().toISOString() : null })} />
+      <CheckboxField label="Agent Exclusive (5 days)" checked={!!form.isAgent} onChange={v => setForm({ ...form, isAgent: v, agentMarkedAt: v ? new Date().toISOString() : null })} />
     </ContentForm>
   );
 

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Film, Tv, Flame, Clock, Trophy, Star, Sparkles, Gem, Heart, Building2 } from "lucide-react";
 import DramaCard from "@/components/DramaCard";
 import LogoLoader from "@/components/LogoLoader";
 import { subscribeMovies, subscribeSeries } from "@/lib/firebaseServices";
@@ -30,80 +30,80 @@ const toDrama = (item: MovieItem | SeriesItem, i: number): Drama => ({
   displayOrder: item.displayOrder || 0,
 });
 
-const SECTION_CONFIG: Record<string, { title: string; emoji: string; filter: (m: MovieItem[], s: SeriesItem[]) => (MovieItem | SeriesItem)[] }> = {
+const SECTION_CONFIG: Record<string, { title: string; icon: ReactNode; filter: (m: MovieItem[], s: SeriesItem[]) => (MovieItem | SeriesItem)[] }> = {
   "movies": {
     title: "All Movies",
-    emoji: "🎬",
+    icon: <Film className="w-5 h-5" />,
     filter: (m) => m,
   },
   "series": {
     title: "All Series",
-    emoji: "📺",
+    icon: <Tv className="w-5 h-5" />,
     filter: (_, s) => s,
   },
   "popular": {
     title: "Popular on LUO FILM",
-    emoji: "🔥",
+    icon: <Flame className="w-5 h-5 text-orange-500" />,
     filter: (m, s) => [...m.filter(i => i.isPopular), ...s.filter(i => i.isPopular)],
   },
   "coming-soon": {
     title: "Coming Soon & Upcoming",
-    emoji: "⏳",
+    icon: <Clock className="w-5 h-5 text-yellow-500" />,
     filter: (m, s) => [...m.filter(i => i.isComingSoon), ...s.filter(i => i.isComingSoon)],
   },
   "top-rated": {
     title: "Top Rated",
-    emoji: "🏆",
+    icon: <Trophy className="w-5 h-5 text-yellow-500" />,
     filter: (m, s) => [...m.filter(i => i.isTopTen), ...s.filter(i => i.isTopTen)],
   },
   "drama-selection": {
     title: "Drama Selection",
-    emoji: "⭐",
+    icon: <Star className="w-5 h-5 text-yellow-400" />,
     filter: (m, s) => [...m.filter(i => i.isTopTen), ...s.filter(i => i.isTopTen)],
   },
   "editors-selection": {
     title: "Editor's Selection",
-    emoji: "✨",
+    icon: <Sparkles className="w-5 h-5 text-primary" />,
     filter: (m, s) => [...m.filter(i => i.categories?.includes("Drama Selection")), ...s.filter(i => i.categories?.includes("Drama Selection"))],
   },
   "high-quality": {
     title: "High-quality Dramas",
-    emoji: "💎",
+    icon: <Gem className="w-5 h-5 text-cyan-400" />,
     filter: (m, s) => [...m.filter(i => i.categories?.includes("High Quality Dramas")), ...s.filter(i => i.categories?.includes("High Quality Dramas"))],
   },
   "hot-dramas": {
     title: "Hot Dramas",
-    emoji: "🔥",
+    icon: <Flame className="w-5 h-5 text-red-500" />,
     filter: (m, s) => [...m.filter(i => i.isHotDrama), ...s.filter(i => i.isHotDrama)],
   },
   "sweet-romance": {
     title: "Sweet Romance",
-    emoji: "💕",
+    icon: <Heart className="w-5 h-5 text-pink-500" />,
     filter: (m, s) => [...m.filter(i => i.categories?.includes("Sweet Romance")), ...s.filter(i => i.categories?.includes("Sweet Romance"))],
   },
   "ancient-costume": {
     title: "Ancient Costume",
-    emoji: "🏯",
+    icon: <Building2 className="w-5 h-5 text-amber-600" />,
     filter: (m, s) => [...m.filter(i => i.categories?.includes("Ancient Costume")), ...s.filter(i => i.categories?.includes("Ancient Costume"))],
   },
   "popular-series": {
     title: "Popular Series",
-    emoji: "📺",
+    icon: <Tv className="w-5 h-5" />,
     filter: (_, s) => s.filter(i => i.isPopular),
   },
   "popular-movies": {
     title: "Popular Movies",
-    emoji: "🎬",
+    icon: <Film className="w-5 h-5" />,
     filter: (m) => m.filter(i => i.isPopular),
   },
   "hot-movies": {
     title: "Hot Movies",
-    emoji: "🔥",
+    icon: <Flame className="w-5 h-5 text-red-500" />,
     filter: (m) => m.filter(i => i.isHotDrama),
   },
   "hot-series": {
     title: "Hot Series",
-    emoji: "🔥",
+    icon: <Flame className="w-5 h-5 text-red-500" />,
     filter: (_, s) => s.filter(i => i.isHotDrama),
   },
 };
@@ -151,8 +151,8 @@ const SectionPage = () => {
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-xs mb-3 transition-colors">
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
-        <h1 className="text-foreground text-xl font-bold mb-1">
-          {config.emoji} {config.title}
+        <h1 className="text-foreground text-xl font-bold mb-1 flex items-center gap-2">
+          {config.icon} {config.title}
         </h1>
         <p className="text-muted-foreground text-xs mb-4">{dramas.length} items</p>
       </div>
@@ -169,7 +169,7 @@ const SectionPage = () => {
         </div>
         {dramas.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-            <span className="text-4xl mb-4">{config.emoji}</span>
+            <div className="mb-4 opacity-40">{config.icon}</div>
             <p className="text-sm font-medium">No content in this section yet</p>
           </div>
         )}

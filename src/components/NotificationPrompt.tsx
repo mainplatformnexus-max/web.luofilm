@@ -212,7 +212,7 @@ export const NotificationPrompt = () => {
     setShow(false);
     if (perm === 'granted') {
       showInAppNotification(
-        "🔔 Notifications On!",
+        "Notifications Enabled",
         "You'll get alerts for new movies, live sports & more.",
         "/logo.png",
         "/",

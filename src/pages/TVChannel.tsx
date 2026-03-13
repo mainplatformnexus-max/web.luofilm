@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Newspaper, Lock } from "lucide-react";
+import { Newspaper, Lock, Radio } from "lucide-react";
 import { subscribeTVChannels, subscribeLatestUpdates, getUserByUid } from "@/lib/firebaseServices";
 import type { TVChannelItem, LatestUpdateItem, UserItem } from "@/data/adminData";
 import shaka from "shaka-player";
@@ -387,7 +387,7 @@ const TVChannel = () => {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <span className="text-4xl mb-4">📡</span>
+          <Radio className="w-10 h-10 mb-4 opacity-40" />
           <p className="text-sm font-medium">No TV channels available yet</p>
           <p className="text-xs mt-1">Admin can add channels from the dashboard</p>
         </div>

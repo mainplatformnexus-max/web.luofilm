@@ -238,9 +238,9 @@ const HowToUse = () => {
 
         <AccordionItem title="What devices can I use?" icon={<Monitor className="w-4 h-4 text-primary" />}>
           <p>LUO FILM works on all devices with a modern web browser:</p>
-          <p>• 📱 <span className="text-foreground font-medium">Phones</span> — Android & iPhone</p>
-          <p>• 💻 <span className="text-foreground font-medium">Computers</span> — Windows, Mac, Linux</p>
-          <p>• 📟 <span className="text-foreground font-medium">Tablets</span> — iPad, Android tablets</p>
+          <p>• <span className="text-foreground font-medium">Phones</span> — Android & iPhone</p>
+          <p>• <span className="text-foreground font-medium">Computers</span> — Windows, Mac, Linux</p>
+          <p>• <span className="text-foreground font-medium">Tablets</span> — iPad, Android tablets</p>
           <p>Install the app for the best experience!</p>
         </AccordionItem>
 
