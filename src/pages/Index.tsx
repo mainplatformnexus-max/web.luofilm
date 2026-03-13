@@ -155,6 +155,7 @@ const Index = () => {
           title: ep.seriesName || ep.name,
           image: parent?.posterUrl || "/placeholder.svg",
           firebaseId: ep.seriesId,
+          episodes: parent?.totalEpisodes ? `${parent.totalEpisodes} Episodes` : "Episodes",
           episodeBadge: `S${ep.seasonNumber || 1} EP${ep.episodeNumber || 1}`,
           createdAt: ep.createdAt,
           genre: parent?.genre,
@@ -219,70 +220,78 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <HeroBanner />
 
-      {/* All sections — genre filter embedded in the first section header */}
-      <div className="mt-5">
+      <div className="mt-4 px-3 md:px-6 space-y-3">
 
-        {/* ── BEST ON LUO FILM / GENRE FILTERED ───────────────── */}
-        {bestAll.length > 0 ? (
-          <ContentRow
-            title={activeGenre === "All Videos" ? "Best on LUO FILM" : activeGenre}
-            dramas={bestAll}
-            icon={Sparkles}
-            isGrid
-            headerRight={<GenreFilter active={activeGenre} onChange={setActiveGenre} />}
-          />
-        ) : (
-          <div className="px-4 md:px-10">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />
-                <h2 className="text-[11px] md:text-xs font-semibold tracking-tight text-foreground">{activeGenre}</h2>
+        {/* ── BEST ON LUO FILM ─────────────────────────────────── */}
+        <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
+          {bestAll.length > 0 ? (
+            <ContentRow
+              title={activeGenre === "All Videos" ? "Best on LUO FILM" : activeGenre}
+              dramas={bestAll}
+              icon={Sparkles}
+              isGrid
+              headerRight={<GenreFilter active={activeGenre} onChange={setActiveGenre} />}
+            />
+          ) : (
+            <div className="px-4 pt-4 pb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">{activeGenre}</span>
+                </div>
+                <GenreFilter active={activeGenre} onChange={setActiveGenre} />
               </div>
-              <GenreFilter active={activeGenre} onChange={setActiveGenre} />
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Sparkles className="w-8 h-8 mb-3 opacity-30" />
+                <p className="text-sm font-medium">No content for "{activeGenre}"</p>
+                <button onClick={() => setActiveGenre("All Videos")} className="mt-2 text-xs text-primary underline">
+                  Show all content
+                </button>
+              </div>
             </div>
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-              <Sparkles className="w-10 h-10 mb-4 opacity-30" />
-              <p className="text-sm font-medium">No content found for "{activeGenre}"</p>
-              <button onClick={() => setActiveGenre("All Videos")} className="mt-3 text-xs text-primary underline">
-                Show all content
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* ── RANKINGS – TOP 100 ───────────────────────────────── */}
         {rankings.length > 0 && (
-          <ContentRow
-            title="Rankings – Top 100"
-            dramas={rankings}
-            icon={Trophy}
-            isGrid
-            showRank
-          />
+          <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
+            <ContentRow
+              title="Rankings – Top 100"
+              dramas={rankings}
+              icon={Trophy}
+              isGrid
+              showRank
+            />
+          </div>
         )}
 
         {/* ── AGENT EXCLUSIVES ─────────────────────────────────── */}
         {agentContent.length > 0 && (
-          <ContentRow
-            title="Agent Exclusives"
-            dramas={agentContent}
-            icon={Users}
-            isGrid
-          />
+          <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
+            <ContentRow
+              title="Agent Exclusives"
+              dramas={agentContent}
+              icon={Users}
+              isGrid
+            />
+          </div>
         )}
 
         {/* ── 18+ SECTION ──────────────────────────────────────── */}
         {adultContent.length > 0 && (
-          <ContentRow
-            title="18+ Content"
-            dramas={adultContent}
-            icon={ShieldAlert}
-            isGrid
-          />
+          <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
+            <ContentRow
+              title="18+ Content"
+              dramas={adultContent}
+              icon={ShieldAlert}
+              isGrid
+            />
+          </div>
         )}
+
       </div>
     </div>
   );

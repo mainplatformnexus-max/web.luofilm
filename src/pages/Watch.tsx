@@ -810,7 +810,7 @@ const Watch = () => {
           </div>
 
           {/* Episodes Grid - Mobile only */}
-          {drama.episodes && (
+          {(drama.episodes || episodes.length > 0) && (
             <div className="lg:hidden px-4 pb-3">
               <div className="bg-card border border-border rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
@@ -979,7 +979,7 @@ const Watch = () => {
         </div>
 
         {/* Right Sidebar - Only for series on desktop */}
-        {drama.episodes && (
+        {(drama.episodes || episodes.length > 0) && (
           <div className="hidden lg:block w-[300px] border-l border-border flex-shrink-0">
             <div className="px-4 py-3 border-b border-border">
               <h2 className="text-foreground font-bold text-sm">{drama.title}</h2>
@@ -993,7 +993,7 @@ const Watch = () => {
               </button>
               <button onClick={() => setActiveTab("highlights")}
                 className={`flex-1 py-2.5 text-xs font-medium text-center transition-colors ${activeTab === "highlights" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                🎵 Highlights
+                Highlights
               </button>
             </div>
 
