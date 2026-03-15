@@ -91,16 +91,16 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
             />
-            {/* Rank number overlaid on poster */}
+            {/* Rank number overlaid on poster - centered */}
             {showRank && rankNumber && (
-              <div className="absolute bottom-0 left-0 right-0 flex items-end justify-start px-1 pb-0.5 bg-gradient-to-t from-black/70 to-transparent pt-6 pointer-events-none">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
                 <span
                   className="font-black leading-none select-none"
                   style={{
-                    fontSize: "clamp(28px, 5vw, 48px)",
+                    fontSize: "clamp(32px, 6vw, 56px)",
                     color: "hsl(var(--primary))",
-                    WebkitTextStroke: "1px hsl(var(--primary) / 0.6)",
-                    textShadow: "0 1px 6px rgba(0,0,0,0.8)",
+                    WebkitTextStroke: "1.5px hsl(var(--primary))",
+                    textShadow: "0 2px 12px rgba(0,0,0,0.9), 0 0 20px hsl(var(--primary) / 0.4)",
                   }}
                 >
                   {rankNumber}
