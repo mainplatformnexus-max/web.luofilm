@@ -1,0 +1,518 @@
+const API = "https://function-bun-production-4110.up.railway.app";
+
+Below is the full frontend fetch guide for each route.
+
+1. Health check
+async function checkHealth() {
+  const res = await fetch(`${API}/health`);
+  const data = await res.json();
+  console.log("health:", data);
+}
+
+Expected response:
+
+{
+  "ok": true,
+  "service": "fincra-railway-backend",
+  "mode": "sandbox"
+}
+2. Get public config
+
+This is useful when your frontend needs the Fincra public key.
+
+async function getPublicConfig() {
+  const res = await fetch(`${API}/payments/checkout/public-config`);
+  const data = await res.json();
+  console.log("public config:", data);
+  return data;
+}
+
+Expected response:
+
+{
+  "ok": true,
+  "publicKey": "pk_xxxxx",
+  "baseUrl": "https://sandboxapi.fincra.com"
+}
+3. Create checkout session
+async function createCheckoutSession() {
+  const res = await fetch(`${API}/payments/checkout/session`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      amount: 5000,
+      currency: "NGN",
+      customer: {
+        name: "John Doe",
+        email: "john@example.com"
+      },
+      redirectUrl: "https://yourfrontend.com/payment-success",
+      paymentMethods: ["card", "bank_transfer"],
+      metadata: {
+        orderId: "ORD-1001",
+        userId: "USER-22"
+      }
+    })
+  });
+
+  const data = await res.json();
+  console.log("checkout session:", data);
+  return data;
+}
+
+Typical response shape:
+
+{
+  "ok": true,
+  "reference": "pay-171234567890-abcd1234",
+  "fincra": {
+    "data": {
+      "link": "https://checkout.fincra.com/...",
+      "reference": "pay-171234567890-abcd1234"
+    }
+  }
+}
+
+How to use it on frontend:
+
+async function startPayment() {
+  const data = await createCheckoutSession();
+
+  const checkoutLink =
+    data?.fincra?.data?.link ||
+    data?.fincra?.link;
+
+  if (checkoutLink) {
+    window.location.href = checkoutLink;
+  } else {
+    alert("No checkout link returned");
+    console.log(data);
+  }
+}
+4. Verify checkout payment
+
+Call this after payment, usually on your success page.
+
+async function verifyPayment(reference) {
+  const res = await fetch(`${API}/payments/checkout/verify/${encodeURIComponent(reference)}`);
+  const data = await res.json();
+  console.log("verify payment:", data);
+  return data;
+}
+
+Typical response shape:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": {
+      "status": "successful",
+      "reference": "pay-171234567890-abcd1234",
+      "amount": 5000
+    }
+  }
+}
+
+Example success-page usage:
+
+async function checkPaymentOnPageLoad() {
+  const params = new URLSearchParams(window.location.search);
+  const reference = params.get("reference");
+
+  if (!reference) return;
+
+  const result = await verifyPayment(reference);
+
+  const status =
+    result?.fincra?.data?.status ||
+    result?.fincra?.status;
+
+  if (status === "successful") {
+    document.getElementById("status").textContent = "Payment successful";
+  } else {
+    document.getElementById("status").textContent = "Payment not completed";
+  }
+}
+5. Create permanent NGN virtual account
+async function createPermanentVirtualAccount() {
+  const res = await fetch(`${API}/payments/virtual-accounts/permanent-ngn`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      firstName: "John",
+      lastName: "Doe",
+      email: "john@example.com",
+      phone: "08012345678",
+      bvn: "12345678901"
+    })
+  });
+
+  const data = await res.json();
+  console.log("permanent VA:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": {
+      "accountNumber": "1234567890",
+      "bankName": "Provider Bank",
+      "accountName": "JOHN DOE"
+    }
+  }
+}
+
+Frontend usage:
+
+async function showPermanentVA() {
+  const result = await createPermanentVirtualAccount();
+
+  const account = result?.fincra?.data;
+  if (account) {
+    document.getElementById("accountNumber").textContent = account.accountNumber;
+    document.getElementById("bankName").textContent = account.bankName;
+    document.getElementById("accountName").textContent = account.accountName;
+  }
+}
+6. Create temporary virtual account
+async function createTemporaryVirtualAccount() {
+  const res = await fetch(`${API}/payments/virtual-accounts/temporary`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      amount: 10000,
+      currency: "NGN",
+      expiresAt: "2026-03-16T18:00:00.000Z",
+      customer: {
+        name: "John Doe",
+        email: "john@example.com"
+      }
+    })
+  });
+
+  const data = await res.json();
+  console.log("temporary VA:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": {
+      "accountNumber": "1234567890",
+      "bankName": "Provider Bank",
+      "accountName": "TEMP JOHN DOE",
+      "merchantReference": "tempva-..."
+    }
+  }
+}
+7. Verify collection by merchant reference
+async function verifyCollection(merchantReference) {
+  const res = await fetch(`${API}/payments/collections/${encodeURIComponent(merchantReference)}`);
+  const data = await res.json();
+  console.log("collection:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": {
+      "status": "successful",
+      "amountReceived": 10000,
+      "merchantReference": "tempva-..."
+    }
+  }
+}
+8. Get all collections
+async function getCollections() {
+  const res = await fetch(`${API}/collections`);
+  const data = await res.json();
+  console.log("collections:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": [
+      {
+        "merchantReference": "tempva-123",
+        "status": "successful"
+      }
+    ]
+  }
+}
+9. Get bank list
+async function getBanks() {
+  const res = await fetch(`${API}/banks`);
+  const data = await res.json();
+  console.log("banks:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": [
+      {
+        "code": "044",
+        "name": "Access Bank"
+      },
+      {
+        "code": "058",
+        "name": "GTBank"
+      }
+    ]
+  }
+}
+
+Frontend example to fill a dropdown:
+
+async function loadBanks() {
+  const result = await getBanks();
+  const banks = result?.fincra?.data || [];
+  const select = document.getElementById("bankSelect");
+
+  select.innerHTML = `<option value="">Select bank</option>`;
+
+  banks.forEach((bank) => {
+    const option = document.createElement("option");
+    option.value = bank.code;
+    option.textContent = bank.name;
+    select.appendChild(option);
+  });
+}
+10. Make bank payout
+async function createBankPayout() {
+  const res = await fetch(`${API}/payouts/bank`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sourceCurrency: "NGN",
+      destinationCurrency: "NGN",
+      amount: 1000,
+      description: "Vendor payout",
+      beneficiary: {
+        name: "Jane Doe",
+        accountNumber: "0123456789",
+        bankCode: "044",
+        email: "jane@example.com",
+        phoneNumber: "08012345678",
+        country: "NG"
+      }
+    })
+  });
+
+  const data = await res.json();
+  console.log("bank payout:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": {
+      "reference": "po-17123abcd",
+      "status": "processing"
+    }
+  }
+}
+11. Make mobile money payout
+async function createMobileMoneyPayout() {
+  const res = await fetch(`${API}/payouts/mobile-money`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sourceCurrency: "KES",
+      destinationCurrency: "KES",
+      amount: 500,
+      description: "Wallet withdrawal",
+      beneficiary: {
+        name: "Jane Doe",
+        mobileNumber: "254700000000",
+        mobileMoneyCode: "MPESA",
+        email: "jane@example.com",
+        country: "KE"
+      }
+    })
+  });
+
+  const data = await res.json();
+  console.log("mobile money payout:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": {
+      "reference": "momo-17123abcd",
+      "status": "processing"
+    }
+  }
+}
+12. Verify payout
+async function verifyPayout(reference) {
+  const res = await fetch(`${API}/payouts/reference/${encodeURIComponent(reference)}`);
+  const data = await res.json();
+  console.log("verify payout:", data);
+  return data;
+}
+
+Typical response:
+
+{
+  "ok": true,
+  "fincra": {
+    "data": {
+      "reference": "po-17123abcd",
+      "status": "successful"
+    }
+  }
+}
+Full plain HTML example
+
+You can copy this into your frontend and test quickly:
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Fincra Frontend Test</title>
+</head>
+<body>
+  <h2>Fincra Frontend Test</h2>
+
+  <button onclick="checkHealth()">Check Health</button>
+  <button onclick="loadBanks()">Load Banks</button>
+  <button onclick="startPayment()">Start Payment</button>
+
+  <p id="status"></p>
+
+  <select id="bankSelect"></select>
+
+  <script>
+    const API = "https://function-bun-production-4110.up.railway.app";
+
+    async function checkHealth() {
+      const res = await fetch(`${API}/health`);
+      const data = await res.json();
+      console.log(data);
+      document.getElementById("status").textContent = JSON.stringify(data);
+    }
+
+    async function loadBanks() {
+      const res = await fetch(`${API}/banks`);
+      const data = await res.json();
+      console.log(data);
+
+      const banks = data?.fincra?.data || [];
+      const select = document.getElementById("bankSelect");
+      select.innerHTML = `<option value="">Select bank</option>`;
+
+      banks.forEach((bank) => {
+        const option = document.createElement("option");
+        option.value = bank.code;
+        option.textContent = bank.name;
+        select.appendChild(option);
+      });
+    }
+
+    async function startPayment() {
+      const res = await fetch(`${API}/payments/checkout/session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          amount: 5000,
+          currency: "NGN",
+          customer: {
+            name: "John Doe",
+            email: "john@example.com"
+          },
+          redirectUrl: window.location.origin + window.location.pathname
+        })
+      });
+
+      const data = await res.json();
+      console.log(data);
+
+      const link = data?.fincra?.data?.link || data?.fincra?.link;
+      if (link) {
+        window.location.href = link;
+      } else {
+        document.getElementById("status").textContent = "No checkout link returned";
+      }
+    }
+  </script>
+</body>
+</html>
+Error handling pattern
+
+Use this pattern for every fetch:
+
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, options);
+  const data = await res.json();
+
+  if (!res.ok || data.ok === false) {
+    throw new Error(data.message || "Request failed");
+  }
+
+  return data;
+}
+
+Example:
+
+async function getBanksSafe() {
+  try {
+    const data = await apiFetch(`${API}/banks`);
+    console.log(data);
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+}
+Important note
+
+For security:
+
+GET /banks is safe from frontend
+
+POST /payments/checkout/session can be called from frontend
+
+POST /payouts/bank and POST /payouts/mobile-money should usually be called only from your protected app flow after user auth on your own backend/database side, not openly from any public page
+
+Because if exposed directly in a public frontend, anyone could try sending payouts.
+
+Most common response access pattern
+
+In many routes, your useful values will usually be inside:
+
+data.fincra.data

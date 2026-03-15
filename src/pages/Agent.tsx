@@ -16,7 +16,10 @@ import {
 } from "@/lib/firebaseServices";
 import type { MovieItem, SeriesItem, EpisodeItem } from "@/data/adminData";
 import { useNavigate } from "react-router-dom";
-import { requestDeposit, requestWithdraw, pollPaymentStatus } from "@/lib/livraPayment";
+import {
+  createCheckoutSession,
+  savePendingPayment,
+} from "@/lib/fincraPayment";
 
 interface ContentItem {
   id: string;
@@ -140,115 +143,48 @@ const Agent = () => {
   };
 
   const handleWithdraw = async () => {
-    if (!withdrawAmount || !withdrawNumber || !agentData) return;
-    const amt = parseInt(withdrawAmount);
-    if (amt > agentBalance) {
-      toast({ title: "Insufficient balance", description: `Your balance is UGX ${agentBalance.toLocaleString()}. You cannot withdraw more than your balance.`, variant: "destructive" });
-      return;
-    }
-    if (amt < 1000) {
-      toast({ title: "Invalid amount", description: "Minimum withdrawal is UGX 1,000", variant: "destructive" });
-      return;
-    }
-    const fee = Math.ceil(amt * 0.05); // 5% withdrawal fee
-    const netAmount = amt - fee;
-    
-    setIsProcessing(true);
-    try {
-      // Real Livra withdrawal
-      const result = await requestWithdraw(withdrawNumber, netAmount, `LUO FILM Agent Withdraw: ${agentData.name}`);
-      if (!result.success) {
-        toast({ title: "Withdrawal failed", description: result.error || "Could not process withdrawal", variant: "destructive" });
-        setIsProcessing(false);
-        return;
-      }
-
-      // Deduct full amount from agent balance
-      await updateAgent(agentData.id, { balance: agentBalance - amt });
-      
-      // Record agent withdrawal transaction
-      await addTransaction({
-        userId: agentData.id,
-        userName: agentData.name,
-        userPhone: agentData.phone,
-        type: "withdrawal",
-        amount: amt,
-        status: "completed",
-        method: `${withdrawProvider} (Livra)`,
-        description: `Agent withdraw: UGX ${netAmount.toLocaleString()} sent, UGX ${fee.toLocaleString()} fee (5%)`,
-        livraRef: result.internal_reference,
-        createdAt: new Date().toISOString().split("T")[0],
-      } as any);
-
-      setAgentData({ ...agentData, balance: agentBalance - amt });
-      setShowWithdrawModal(false);
-      setWithdrawAmount("");
-      setWithdrawNumber("");
-      toast({ title: "Withdrawal successful!", description: `UGX ${netAmount.toLocaleString()} sent to ${withdrawProvider}. Fee: UGX ${fee.toLocaleString()} (5%)` });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
-    setIsProcessing(false);
+    toast({
+      title: "Withdrawal Unavailable",
+      description: "Agent withdrawals are currently processed manually. Please contact support.",
+      variant: "destructive",
+    });
   };
 
   const handleRenew = async () => {
-    if (!renewNumber || !agentData) return;
+    if (!agentData) return;
     setIsProcessing(true);
     try {
-      const description = `LUO FILM Agent Renewal: ${renewPlan === "month" ? "Monthly" : "Weekly"}`;
-      const result = await requestDeposit(renewNumber, renewPrice, description);
-      
-      if (!result.success || !result.internal_reference) {
-        toast({ title: "Payment failed", description: result.error || "Could not initiate payment", variant: "destructive" });
-        setIsProcessing(false);
-        return;
-      }
+      const planDays = renewPlan === "day" ? 1 : renewPlan === "week" ? 7 : 30;
+      const planLabel = renewPlan === "day" ? "1 Day" : renewPlan === "week" ? "1 Week" : "1 Month";
+      const planNGN = renewPlan === "day" ? 1000 : renewPlan === "week" ? 4000 : 10000;
 
-      toast({ title: "Payment prompt sent", description: "Check your phone and enter your PIN" });
+      savePendingPayment({
+        type: "agent_renewal",
+        planId: `agent-renew-${renewPlan}`,
+        planLabel,
+        planDays,
+        planAmount: planNGN,
+        mode: "agent",
+        userId: agentData.id,
+        userEmail: "",
+        userName: agentData.name,
+        savedAt: Date.now(),
+        agentDocId: agentData.id,
+        agentRenewPlan: renewPlan,
+      });
 
-      // Poll for status
-      pollPaymentStatus(
-        result.internal_reference,
-        async () => {
-          // Success
-          const expiry = new Date();
-          if (renewPlan === "month") expiry.setMonth(expiry.getMonth() + 1);
-          else expiry.setDate(expiry.getDate() + 7);
+      const session = await createCheckoutSession({
+        amount: planNGN,
+        currency: "NGN",
+        customerName: agentData.name,
+        customerEmail: agentData.phone || "",
+        redirectUrl: `${window.location.origin}/payment-success`,
+        metadata: { agentId: agentData.id, planId: `agent-renew-${renewPlan}` },
+      });
 
-          await updateAgent(agentData.id, {
-            status: "active",
-            planExpiry: expiry.toISOString().split("T")[0],
-            plan: renewPlan === "month" ? "Monthly" : "Weekly",
-          });
-
-          await addTransaction({
-            userId: agentData.id,
-            userName: agentData.name,
-            userPhone: agentData.phone,
-            type: "subscription",
-            amount: renewPrice,
-            status: "completed",
-            method: "Mobile Money (Livra)",
-            description: `Agent renewal: ${renewPlan === "month" ? "Monthly" : "Weekly"}`,
-            livraRef: result.internal_reference,
-            createdAt: new Date().toISOString().split("T")[0],
-          } as any);
-
-          setAgentData({ ...agentData, planExpiry: expiry.toISOString().split("T")[0], status: "active" });
-          setShowRenewModal(false);
-          setRenewNumber("");
-          setIsProcessing(false);
-          toast({ title: "Subscription renewed!" });
-        },
-        (errorMsg) => {
-          toast({ title: "Payment failed", description: errorMsg, variant: "destructive" });
-          setIsProcessing(false);
-        },
-        60,
-        5000
-      );
+      window.location.href = session.checkoutLink;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Payment Error", description: err.message || "Could not start payment. Please try again.", variant: "destructive" });
       setIsProcessing(false);
     }
   };
@@ -437,23 +373,21 @@ const Agent = () => {
       {showRenewModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowRenewModal(false)}>
           <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-bold text-foreground mb-4">Renew Subscription</h3>
-            <div className="flex gap-2 mb-4">
+            <h3 className="text-sm font-bold text-foreground mb-4">Renew Agent Subscription</h3>
+            <div className="flex gap-2 mb-5">
               {(["day", "week", "month"] as const).map(p => (
-              <button key={p} onClick={() => setRenewPlan(p as any)}
-                className={`flex-1 py-3 rounded-xl border-2 text-xs font-medium transition-all ${renewPlan === p ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
-                1 {p === "day" ? "Day" : p === "week" ? "Week" : "Month"}<br />
-                <span className="text-sm font-bold">{p === "day" ? "5,000" : p === "week" ? "20,000" : "50,000"} UGX</span>
-              </button>
-            ))}
+                <button key={p} onClick={() => setRenewPlan(p as any)}
+                  className={`flex-1 py-3 rounded-xl border-2 text-xs font-medium transition-all ${renewPlan === p ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
+                  1 {p === "day" ? "Day" : p === "week" ? "Week" : "Month"}<br />
+                  <span className="text-sm font-bold">₦{p === "day" ? "1,000" : p === "week" ? "4,000" : "10,000"}</span>
+                </button>
+              ))}
             </div>
-            <div className="mb-4">
-              <label className="text-muted-foreground text-[10px] block mb-1">Mobile Money Number</label>
-              <input type="tel" value={renewNumber} onChange={(e) => setRenewNumber(e.target.value)} placeholder="e.g. 0771234567"
-                className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-            </div>
-            <Button className="w-full text-xs h-9" onClick={handleRenew} disabled={isProcessing || !renewNumber}>
-              {isProcessing ? "Processing..." : `Pay UGX ${renewPrice.toLocaleString()}`}
+            <p className="text-muted-foreground text-[10px] text-center mb-4">
+              You will be redirected to a secure checkout page to pay with Card or Bank Transfer.
+            </p>
+            <Button className="w-full text-xs h-9" onClick={handleRenew} disabled={isProcessing}>
+              {isProcessing ? "Opening Checkout..." : `Pay ₦${renewPlan === "day" ? "1,000" : renewPlan === "week" ? "4,000" : "10,000"}`}
             </Button>
           </div>
         </div>

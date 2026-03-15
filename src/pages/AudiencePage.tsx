@@ -13,7 +13,7 @@ import {
 import type { SharedLink } from "@/lib/firebaseServices";
 import type { MovieItem } from "@/data/adminData";
 import ArtPlayerComponent from "@/components/ArtPlayerComponent";
-import { requestDeposit, pollPaymentStatus } from "@/lib/livraPayment";
+import { createCheckoutSession, savePendingPayment } from "@/lib/fincraPayment";
 
 // Device fingerprint for audience "login"
 const getDeviceId = (): string => {
@@ -55,16 +55,12 @@ const AudiencePage = () => {
   const { shareCode } = useParams<{ shareCode: string }>();
   const { toast } = useToast();
   const [step, setStep] = useState<PageStep>("info");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [provider, setProvider] = useState("MTN Mobile Money");
   const [timeLeft, setTimeLeft] = useState(0);
   const [content, setContent] = useState<SharedLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [agentName, setAgentName] = useState("");
   const [relatedLinks, setRelatedLinks] = useState<SharedLink[]>([]);
   const [relatedMovies, setRelatedMovies] = useState<MovieItem[]>([]);
-  const [statusMessage, setStatusMessage] = useState("");
-  const cancelPollRef = useState<(() => void) | null>(null);
   const accessDuration = (content as any)?.accessDuration || 60;
 
   // Load content
@@ -128,83 +124,41 @@ const AudiencePage = () => {
   };
 
   const handlePay = async () => {
-    if (!phoneNumber || !content) {
-      toast({ title: "Enter phone number", variant: "destructive" });
-      return;
-    }
+    if (!content || !shareCode) return;
     setStep("processing");
-    setStatusMessage("Sending payment prompt to your phone...");
-    
     try {
-      const description = `LUO FILM: ${content.contentTitle} (${accessDuration}min access)`;
-      const result = await requestDeposit(phoneNumber, content.price, description);
-      
-      if (!result.success || !result.internal_reference) {
-        toast({ title: "Payment failed", description: result.error || "Could not initiate payment", variant: "destructive" });
-        setStep("payment");
-        return;
-      }
+      savePendingPayment({
+        type: "audience_content",
+        planId: `audience-${content.id}`,
+        planLabel: content.contentTitle,
+        planDays: 0,
+        planAmount: content.price,
+        mode: "user",
+        userId: getDeviceId(),
+        userEmail: "",
+        userName: "Guest",
+        savedAt: Date.now(),
+        shareCode,
+        contentTitle: content.contentTitle,
+        contentId: content.id,
+        agentId: content.agentId,
+        contentViews: content.views || 0,
+        contentEarnings: content.earnings || 0,
+        accessDuration,
+      });
 
-      setStatusMessage("Waiting for you to confirm payment on your phone...");
+      const session = await createCheckoutSession({
+        amount: content.price,
+        currency: "NGN",
+        customerName: "Guest",
+        customerEmail: "guest@luofilm.site",
+        redirectUrl: `${window.location.origin}/payment-success`,
+        metadata: { shareCode, contentId: content.id },
+      });
 
-      // Poll for payment status
-      const cancelPoll = pollPaymentStatus(
-        result.internal_reference,
-        async (statusData) => {
-          // Payment successful!
-          try {
-            await addTransaction({
-              userId: getDeviceId(),
-              userName: phoneNumber,
-              userPhone: phoneNumber,
-              type: "agent-share",
-              amount: content.price,
-              status: "completed",
-              method: `Mobile Money (Livra)`,
-              description: `Agent sell: ${content.contentTitle}`,
-              livraRef: result.internal_reference,
-              createdAt: new Date().toISOString().split("T")[0],
-            } as any);
-
-            await updateSharedLink(content.id, {
-              views: (content.views || 0) + 1,
-              earnings: (content.earnings || 0) + content.price,
-            });
-
-            // Credit the agent's balance
-            try {
-              const agent = await getAgentByAgentId(content.agentId);
-              if (agent) {
-                const { updateAgent } = await import("@/lib/firebaseServices");
-                await updateAgent(agent.id, {
-                  balance: (agent.balance || 0) + content.price,
-                  totalEarnings: (agent.totalEarnings || 0) + content.price,
-                });
-              }
-            } catch (e) {
-              console.error("Failed to credit agent balance:", e);
-            }
-
-            grantAccess(shareCode!, accessDuration);
-            setStep("success");
-            setTimeout(() => {
-              setStep("watching");
-              setTimeLeft(accessDuration * 60);
-            }, 2000);
-          } catch (err: any) {
-            toast({ title: "Error", description: err.message, variant: "destructive" });
-            setStep("payment");
-          }
-        },
-        (errorMsg) => {
-          toast({ title: "Payment failed", description: errorMsg, variant: "destructive" });
-          setStep("payment");
-        },
-        60,
-        5000
-      );
+      window.location.href = session.checkoutLink;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Payment Error", description: err.message || "Could not start payment.", variant: "destructive" });
       setStep("payment");
     }
   };
@@ -361,40 +315,28 @@ const AudiencePage = () => {
             <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-lg">
               <div className="text-center">
                 <p className="text-muted-foreground text-xs">Pay to watch & download</p>
-                <p className="text-primary text-3xl font-bold mt-1">UGX {content.price.toLocaleString()}</p>
+                <p className="text-primary text-3xl font-bold mt-1">₦{content.price.toLocaleString()}</p>
                 <div className="flex items-center justify-center gap-1.5 mt-2">
                   <Timer className="w-3 h-3 text-muted-foreground" />
                   <p className="text-muted-foreground text-[10px]">{accessDuration} minutes access after payment</p>
                 </div>
               </div>
-              <Button className="w-full text-xs h-10 gap-1.5 rounded-xl" onClick={() => setStep("payment")}>
-                <CreditCard className="w-4 h-4" /> Pay Now
+              <Button className="w-full text-xs h-10 gap-1.5 rounded-xl" onClick={handlePay}>
+                <CreditCard className="w-4 h-4" /> Pay ₦{content.price.toLocaleString()}
               </Button>
+              <p className="text-center text-[10px] text-muted-foreground">
+                Secured by Fincra · Card or Bank Transfer
+              </p>
             </div>
           )}
 
           {step === "payment" && (
             <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-lg">
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 text-center">
-                <p className="text-primary text-2xl font-bold">UGX {content.price.toLocaleString()}</p>
+                <p className="text-primary text-2xl font-bold">₦{content.price.toLocaleString()}</p>
               </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-muted-foreground text-[10px] block mb-1">Mobile Money Number</label>
-                  <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="e.g. 0771234567"
-                    className="w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-[10px] block mb-1">Provider</label>
-                  <select value={provider} onChange={(e) => setProvider(e.target.value)}
-                    className="w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary/50">
-                    <option>MTN Mobile Money</option>
-                    <option>Airtel Money</option>
-                  </select>
-                </div>
-              </div>
-              <Button className="w-full text-xs h-10 gap-1.5 rounded-xl" onClick={handlePay} disabled={!phoneNumber}>
-                <CreditCard className="w-4 h-4" /> Pay UGX {content.price.toLocaleString()}
+              <Button className="w-full text-xs h-10 gap-1.5 rounded-xl" onClick={handlePay}>
+                <CreditCard className="w-4 h-4" /> Proceed to Checkout
               </Button>
               <button onClick={() => setStep("info")} className="w-full text-muted-foreground text-[10px] text-center hover:text-foreground">← Go back</button>
             </div>
@@ -403,9 +345,8 @@ const AudiencePage = () => {
           {step === "processing" && (
             <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-4 shadow-lg">
               <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-foreground text-sm font-semibold">Processing Payment</p>
-              <p className="text-muted-foreground text-[10px]">{statusMessage || "Waiting for confirmation..."}</p>
-              <p className="text-muted-foreground text-[9px]">Check your phone and enter your PIN</p>
+              <p className="text-foreground text-sm font-semibold">Opening Checkout</p>
+              <p className="text-muted-foreground text-[10px]">Preparing your secure payment page...</p>
             </div>
           )}
 

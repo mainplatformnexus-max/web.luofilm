@@ -33,7 +33,6 @@ import {
   updateUser, deleteUser,
   deleteTransaction, addTransaction,
 } from "@/lib/firebaseServices";
-import { getWalletBalance, getLivraTransactions, requestWithdraw } from "@/lib/livraPayment";
 
 const ADMIN_EMAIL = "mainplatform.nexus@gmail.com";
 
@@ -1099,62 +1098,13 @@ const WalletSection = ({ transactions, search }: { transactions: WalletTransacti
   const [withdrawNumber, setWithdrawNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fetch real Livra wallet balance & transactions
+  // Wallet balance — Livra removed; Fincra does not expose a real-time balance API
   useEffect(() => {
-    const load = async () => {
-      setLoadingBalance(true);
-      try {
-        const [balData, txData] = await Promise.all([getWalletBalance(), getLivraTransactions()]);
-        setLivraBalance(balData.balance);
-        setLivraTransactions(Array.isArray(txData) ? txData : []);
-      } catch { }
-      setLoadingBalance(false);
-    };
-    load();
+    setLoadingBalance(false);
   }, []);
 
   const handleAdminWithdraw = async () => {
-    if (!withdrawAmount || !withdrawNumber) return;
-    const amt = parseInt(withdrawAmount);
-    if (amt < 1000) {
-      toast({ title: "Minimum UGX 1,000", variant: "destructive" });
-      return;
-    }
-    if (amt > livraBalance) {
-      toast({ title: "Insufficient Livra balance", description: `Available: UGX ${livraBalance.toLocaleString()}`, variant: "destructive" });
-      return;
-    }
-    setIsProcessing(true);
-    try {
-      const result = await requestWithdraw(withdrawNumber, amt, "LUO FILM Admin Withdrawal");
-      if (!result.success) {
-        toast({ title: "Withdrawal failed", description: result.error, variant: "destructive" });
-        setIsProcessing(false);
-        return;
-      }
-
-      await addTransaction({
-        userId: "admin",
-        userName: "Admin",
-        userPhone: withdrawNumber,
-        type: "withdrawal",
-        amount: amt,
-        status: "completed",
-        method: "Mobile Money (Livra)",
-        description: "Admin withdrawal",
-        livraRef: result.internal_reference,
-        createdAt: new Date().toISOString().split("T")[0],
-      } as any);
-
-      setLivraBalance(prev => prev - amt);
-      setShowWithdraw(false);
-      setWithdrawAmount("");
-      setWithdrawNumber("");
-      toast({ title: "Withdrawal successful!", description: `UGX ${amt.toLocaleString()} sent` });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
-    setIsProcessing(false);
+    toast({ title: "Not Available", description: "Admin withdrawals via the old payment provider are no longer supported.", variant: "destructive" });
   };
 
   const totalFirestoreBalance = transactions.filter(t => t.status === "completed").reduce((sum, t) => t.type === "withdrawal" ? sum - t.amount : sum + t.amount, 0);
