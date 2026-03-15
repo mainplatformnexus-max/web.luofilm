@@ -225,8 +225,8 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
   const [step, setStep] = useState<"plan" | "loading" | "checkout">("plan");
   const [checkoutUrl, setCheckoutUrl] = useState<string>("");
   const [userDoc, setUserDoc] = useState<any>(null);
-  const [currency, setCurrency] = useState("NGN");
-  const [currencySymbol, setCurrencySymbol] = useState("₦");
+  const [currency, setCurrency] = useState("UGX");
+  const [currencySymbol, setCurrencySymbol] = useState("Sh");
   const { toast } = useToast();
   const { user } = useAuth();
 

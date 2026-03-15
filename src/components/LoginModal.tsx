@@ -23,10 +23,10 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [countryCode, setCountryCode] = useState("NG");
-  const [countryName, setCountryName] = useState("Nigeria");
-  const [currency, setCurrency] = useState("NGN");
-  const [currencySymbol, setCurrencySymbol] = useState("₦");
+  const [countryCode, setCountryCode] = useState("UG");
+  const [countryName, setCountryName] = useState("Uganda");
+  const [currency, setCurrency] = useState("UGX");
+  const [currencySymbol, setCurrencySymbol] = useState("Sh");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
   const [geoDetected, setGeoDetected] = useState(false);

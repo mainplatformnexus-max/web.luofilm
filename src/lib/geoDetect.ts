@@ -225,10 +225,10 @@ export const detectGeo = async (): Promise<GeoInfo> => {
     return _cached;
   } catch {
     _cached = {
-      countryCode: "NG",
-      countryName: "Nigeria",
-      currency: "NGN",
-      currencySymbol: "₦",
+      countryCode: "UG",
+      countryName: "Uganda",
+      currency: "UGX",
+      currencySymbol: "Sh",
     };
     return _cached;
   }
