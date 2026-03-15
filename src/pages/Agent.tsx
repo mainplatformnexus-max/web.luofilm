@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   getMovies, getSeries, getEpisodes,
   subscribeSharedLinks,
-  updateAgent, addTransaction,
+  updateAgent, addTransaction, getUserByUid,
   type SharedLink,
 } from "@/lib/firebaseServices";
 import type { MovieItem, SeriesItem, EpisodeItem } from "@/data/adminData";
@@ -20,6 +20,12 @@ import {
   createCheckoutSession,
   savePendingPayment,
 } from "@/lib/fincraPayment";
+import {
+  getPlansForCurrency,
+  getPaymentCurrency,
+  PAYMENT_METHODS_API,
+} from "@/lib/subscriptionPlans";
+import { getCurrencySymbol } from "@/lib/geoDetect";
 
 interface ContentItem {
   id: string;
@@ -35,7 +41,7 @@ interface ContentItem {
 
 const Agent = () => {
   const { toast } = useToast();
-  const { agentData, setAgentData } = useAuth();
+  const { agentData, setAgentData, user } = useAuth();
   const navigate = useNavigate();
 
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -46,18 +52,31 @@ const Agent = () => {
   const [withdrawProvider, setWithdrawProvider] = useState("MTN Mobile Money");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showRenewModal, setShowRenewModal] = useState(false);
-  const [renewPlan, setRenewPlan] = useState<"day" | "week" | "month">("week");
+  const [renewPlan, setRenewPlan] = useState<"1day" | "1week" | "1month">("1week");
   const [renewNumber, setRenewNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [seriesPosters, setSeriesPosters] = useState<Record<string, string>>({});
+  const [agentCurrency, setAgentCurrency] = useState("UGX");
+  const [agentCurrencySymbol, setAgentCurrencySymbol] = useState("Sh");
+
+  // Load user currency for agent renewal pricing
+  useEffect(() => {
+    if (user) {
+      getUserByUid(user.uid).then(doc => {
+        if (doc?.currency) {
+          setAgentCurrency(doc.currency);
+          setAgentCurrencySymbol(doc.currencySymbol || getCurrencySymbol(doc.currency));
+        }
+      });
+    }
+  }, [user]);
 
   // Redirect if no agent data
   useEffect(() => {
     if (!agentData) {
-      // Allow page to render with message
       setLoading(false);
     }
   }, [agentData]);
@@ -154,16 +173,19 @@ const Agent = () => {
     if (!agentData) return;
     setIsProcessing(true);
     try {
-      const planDays = renewPlan === "day" ? 1 : renewPlan === "week" ? 7 : 30;
-      const planLabel = renewPlan === "day" ? "1 Day" : renewPlan === "week" ? "1 Week" : "1 Month";
-      const planNGN = renewPlan === "day" ? 1000 : renewPlan === "week" ? 4000 : 10000;
+      const agentPlans = getPlansForCurrency(agentCurrency).agent;
+      const planInfo = agentPlans.find(p => p.id === `agent-${renewPlan}`);
+      if (!planInfo) throw new Error("Plan not found");
+
+      const fincraChargeCurrency = getPaymentCurrency(agentCurrency);
+      const paymentMethods = PAYMENT_METHODS_API[agentCurrency] || ["card", "bank_transfer"];
 
       savePendingPayment({
         type: "agent_renewal",
         planId: `agent-renew-${renewPlan}`,
-        planLabel,
-        planDays,
-        planAmount: planNGN,
+        planLabel: planInfo.label,
+        planDays: planInfo.days,
+        planAmount: planInfo.priceNum,
         mode: "agent",
         userId: agentData.id,
         userEmail: "",
@@ -174,11 +196,12 @@ const Agent = () => {
       });
 
       const session = await createCheckoutSession({
-        amount: planNGN,
-        currency: "NGN",
+        amount: planInfo.priceNum,
+        currency: fincraChargeCurrency,
         customerName: agentData.name,
         customerEmail: agentData.phone || "",
         redirectUrl: `${window.location.origin}/payment-success`,
+        paymentMethods,
         metadata: { agentId: agentData.id, planId: `agent-renew-${renewPlan}` },
       });
 
@@ -189,7 +212,7 @@ const Agent = () => {
     }
   };
 
-  const renewPrice = renewPlan === "week" ? 20000 : 50000;
+  const agentPlans = getPlansForCurrency(agentCurrency).agent;
 
   return (
     <div className="min-h-screen bg-background px-4 md:px-8 py-6">
@@ -375,19 +398,22 @@ const Agent = () => {
           <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <h3 className="text-sm font-bold text-foreground mb-4">Renew Agent Subscription</h3>
             <div className="flex gap-2 mb-5">
-              {(["day", "week", "month"] as const).map(p => (
-                <button key={p} onClick={() => setRenewPlan(p as any)}
-                  className={`flex-1 py-3 rounded-xl border-2 text-xs font-medium transition-all ${renewPlan === p ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
-                  1 {p === "day" ? "Day" : p === "week" ? "Week" : "Month"}<br />
-                  <span className="text-sm font-bold">₦{p === "day" ? "1,000" : p === "week" ? "4,000" : "10,000"}</span>
-                </button>
-              ))}
+              {agentPlans.map(plan => {
+                const planKey = plan.id.replace("agent-", "") as "1day" | "1week" | "1month";
+                return (
+                  <button key={plan.id} onClick={() => setRenewPlan(planKey)}
+                    className={`flex-1 py-3 rounded-xl border-2 text-xs font-medium transition-all ${renewPlan === planKey ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
+                    {plan.label.replace("Agent ", "")}<br />
+                    <span className="text-sm font-bold">{agentCurrencySymbol}{plan.price}</span>
+                  </button>
+                );
+              })}
             </div>
             <p className="text-muted-foreground text-[10px] text-center mb-4">
-              You will be redirected to a secure checkout page to pay with Card or Bank Transfer.
+              You will be redirected to a secure checkout page to complete payment.
             </p>
             <Button className="w-full text-xs h-9" onClick={handleRenew} disabled={isProcessing}>
-              {isProcessing ? "Opening Checkout..." : `Pay ₦${renewPlan === "day" ? "1,000" : renewPlan === "week" ? "4,000" : "10,000"}`}
+              {isProcessing ? "Opening Checkout..." : `Pay ${agentCurrencySymbol}${agentPlans.find(p => p.id === `agent-${renewPlan}`)?.price || ""} (${agentCurrency})`}
             </Button>
           </div>
         </div>
