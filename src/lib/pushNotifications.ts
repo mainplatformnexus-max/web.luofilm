@@ -21,6 +21,22 @@ export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration
 
 export const getSwRegistration = () => swRegistration;
 
+const waitForActiveServiceWorker = async (reg: ServiceWorkerRegistration): Promise<void> => {
+  if (reg.active) return;
+  return new Promise((resolve) => {
+    const sw = reg.installing || reg.waiting;
+    if (!sw) { resolve(); return; }
+    const timeout = setTimeout(resolve, 4000);
+    sw.addEventListener('statechange', function handler() {
+      if (sw.state === 'activated' || sw.state === 'active') {
+        clearTimeout(timeout);
+        sw.removeEventListener('statechange', handler);
+        resolve();
+      }
+    });
+  });
+};
+
 export const requestPushPermission = async (): Promise<boolean> => {
   if (!('Notification' in window)) return false;
   if (Notification.permission === 'granted') return true;
@@ -40,18 +56,23 @@ export const showDeviceNotification = async (
 
   const reg = swRegistration || (await registerServiceWorker());
 
-  if (reg && reg.active) {
-    try {
-      await reg.showNotification(title, {
-        body,
-        icon: icon || '/logo.png',
-        badge: '/logo.png',
-        tag: tag || 'luo-film',
-        data: { url: url || '/' },
-        vibrate: [200, 100, 200],
-      } as NotificationOptions);
-      return;
-    } catch (e) {
+  if (reg) {
+    await waitForActiveServiceWorker(reg);
+    if (reg.active) {
+      try {
+        await reg.showNotification(title, {
+          body,
+          icon: icon || '/logo.png',
+          badge: '/logo.png',
+          tag: tag || 'luo-film-' + Date.now(),
+          data: { url: url || '/' },
+          vibrate: [200, 100, 200],
+          requireInteraction: false,
+        } as NotificationOptions);
+        return;
+      } catch (e) {
+        console.warn('SW showNotification failed:', e);
+      }
     }
   }
 
@@ -60,7 +81,7 @@ export const showDeviceNotification = async (
       body,
       icon: icon || '/logo.png',
       badge: '/logo.png',
-      tag: tag || 'luo-film',
+      tag: tag || 'luo-film-' + Date.now(),
     });
     notif.onclick = () => {
       window.focus();
@@ -81,6 +102,8 @@ export const initFCM = async (userId?: string) => {
 
     const reg = swRegistration || (await registerServiceWorker());
     if (!reg) return;
+
+    await waitForActiveServiceWorker(reg);
 
     const token = await getToken(messaging, {
       vapidKey: FCM_VAPID_KEY,
@@ -104,5 +127,6 @@ export const initFCM = async (userId?: string) => {
       showDeviceNotification(title, body, icon, url, payload.data?.tag);
     });
   } catch (e) {
+    console.warn('FCM init failed:', e);
   }
 };

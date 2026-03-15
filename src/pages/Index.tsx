@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Trophy, Users, ShieldAlert, Sparkles,
-  SlidersHorizontal, ChevronDown, X, Check,
+  SlidersHorizontal, ChevronDown, X, Check, Star, Calendar,
+  Mail, Phone, MapPin, Facebook, Twitter, Youtube, Instagram,
 } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
 import DramaCard from "@/components/DramaCard";
@@ -146,12 +147,117 @@ const GenreDropdown = ({
   );
 };
 
+const RATING_OPTIONS = [
+  { label: "Any Rating", value: 0 },
+  { label: "7.0+ ⭐", value: 7 },
+  { label: "8.0+ ⭐", value: 8 },
+  { label: "9.0+ ⭐", value: 9 },
+];
+
+const YEAR_OPTIONS = [
+  { label: "Any Year", value: "" },
+  { label: "2026", value: "2026" },
+  { label: "2025", value: "2025" },
+  { label: "2024", value: "2024" },
+  { label: "2023", value: "2023" },
+  { label: "2022", value: "2022" },
+  { label: "2020–2021", value: "2020-2021" },
+  { label: "Before 2020", value: "before-2020" },
+];
+
+const SmallDropdown = ({
+  icon: Icon,
+  label,
+  active,
+  options,
+  onChange,
+}: {
+  icon: React.ElementType;
+  label: string;
+  active: string | number;
+  options: { label: string; value: string | number }[];
+  onChange: (v: string | number) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const isFiltered = active !== "" && active !== 0;
+  const activeLabel = options.find(o => o.value === active)?.label || label;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        btnRef.current && !btnRef.current.contains(target) &&
+        dropRef.current && !dropRef.current.contains(target)
+      ) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 6, left: rect.left });
+    }
+    setOpen(o => !o);
+  };
+
+  return (
+    <div className="flex-shrink-0">
+      <button
+        ref={btnRef}
+        onClick={handleToggle}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-semibold whitespace-nowrap transition-all ${
+          isFiltered
+            ? "bg-primary border-primary text-primary-foreground"
+            : "bg-secondary/60 border-border text-foreground hover:bg-secondary"
+        }`}
+      >
+        <Icon className="w-3.5 h-3.5" />
+        <span>{isFiltered ? activeLabel : label}</span>
+        {isFiltered
+          ? <X className="w-3 h-3" onClick={e => { e.stopPropagation(); onChange(typeof active === "number" ? 0 : ""); setOpen(false); }} />
+          : <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        }
+      </button>
+      {open && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-card border border-border rounded-xl shadow-2xl py-1.5 min-w-[150px] animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{ top: pos.top, left: pos.left }}
+        >
+          {options.map(opt => (
+            <button
+              key={String(opt.value)}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`flex items-center justify-between w-full px-3 py-2 text-[11px] font-semibold transition-colors ${
+                active === opt.value
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground hover:bg-secondary"
+              }`}
+            >
+              <span>{opt.label}</span>
+              {active === opt.value && <Check className="w-3 h-3" />}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
 const Index = () => {
   const [fbMovies, setFbMovies] = useState<(MovieItem & { _idx: number })[] | null>(null);
   const [fbSeries, setFbSeries] = useState<(SeriesItem & { _idx: number })[] | null>(null);
   const [fbEpisodes, setFbEpisodes] = useState<EpisodeItem[]>([]);
   const [activeGenre, setActiveGenre] = useState("All Videos");
   const [activeTab, setActiveTab] = useState<TabId>("best");
+  const [minRating, setMinRating] = useState<number>(0);
+  const [activeYear, setActiveYear] = useState<string>("");
 
   useEffect(() => {
     const unsub1 = subscribeMovies(movies => setFbMovies(movies.map((m, i) => ({ ...m, _idx: i }))));
@@ -203,16 +309,29 @@ const Index = () => {
       const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return db - da;
     });
-    if (activeGenre === "All Videos") return base;
+
     return base.filter(d => {
       const genre = d.genre?.toLowerCase() || "";
       const categories = (d as any).categories || [];
-      return (
-        genre.includes(activeGenre.toLowerCase()) ||
-        categories.some((c: string) => c.toLowerCase().includes(activeGenre.toLowerCase()))
-      );
+      if (activeGenre !== "All Videos") {
+        const matchGenre = genre.includes(activeGenre.toLowerCase()) ||
+          categories.some((c: string) => c.toLowerCase().includes(activeGenre.toLowerCase()));
+        if (!matchGenre) return false;
+      }
+      if (minRating > 0 && (d.rating ?? 0) < minRating) return false;
+      if (activeYear) {
+        const year = d.createdAt ? new Date(d.createdAt).getFullYear() : null;
+        if (activeYear === "2020-2021") {
+          if (!year || year < 2020 || year > 2021) return false;
+        } else if (activeYear === "before-2020") {
+          if (!year || year >= 2020) return false;
+        } else {
+          if (!year || String(year) !== activeYear) return false;
+        }
+      }
+      return true;
     });
-  }, [allMovieDramas, allSeriesDramas, episodeDramas, activeGenre]);
+  }, [allMovieDramas, allSeriesDramas, episodeDramas, activeGenre, minRating, activeYear]);
 
   const rankings = useMemo<Drama[]>(() => {
     return [...allMovieDramas, ...allSeriesDramas]
@@ -273,13 +392,31 @@ const Index = () => {
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center gap-2 px-3 md:px-6 py-2.5 overflow-x-auto scrollbar-hide">
 
-          {/* Genre filter — always first */}
+          {/* Genre filter */}
           <GenreDropdown
             active={activeGenre}
             onChange={g => {
               setActiveGenre(g);
               setActiveTab("best");
             }}
+          />
+
+          {/* Year filter */}
+          <SmallDropdown
+            icon={Calendar}
+            label="Year"
+            active={activeYear}
+            options={YEAR_OPTIONS}
+            onChange={v => { setActiveYear(String(v)); setActiveTab("best"); }}
+          />
+
+          {/* Rating filter */}
+          <SmallDropdown
+            icon={Star}
+            label="Rating"
+            active={minRating}
+            options={RATING_OPTIONS}
+            onChange={v => { setMinRating(Number(v)); setActiveTab("best"); }}
           />
 
           {/* Section tabs */}
@@ -339,14 +476,116 @@ const Index = () => {
         )}
       </div>
 
-      {/* Site Footer */}
-      <footer className="mt-12 pb-24 lg:pb-8 border-t border-border/40 pt-6 px-4">
-        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} LUO FILM · luofilm.site · All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <a href="/privacy" className="hover:text-primary transition-colors underline underline-offset-2">Privacy Policy</a>
-            <a href="/terms" className="hover:text-primary transition-colors underline underline-offset-2">Terms &amp; Conditions</a>
-            <a href="/how-to-use" className="hover:text-primary transition-colors">Help / Guide</a>
+      {/* ── FULL FOOTER ─────────────────────────────────────── */}
+      <footer className="mt-16 border-t border-border/40 bg-background/80 pb-24 lg:pb-0">
+        <div className="max-w-screen-xl mx-auto px-4 md:px-6 pt-10 pb-6">
+          {/* Top grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg font-extrabold text-primary tracking-tight">LUO FILM</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                The #1 platform for Luo-translated movies, series, live TV &amp; sports. Available on web and mobile.
+              </p>
+              <div className="flex items-center gap-2">
+                <a href="https://facebook.com/luofilm" target="_blank" rel="noreferrer"
+                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Facebook className="w-3.5 h-3.5" />
+                </a>
+                <a href="https://twitter.com/luofilm" target="_blank" rel="noreferrer"
+                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Twitter className="w-3.5 h-3.5" />
+                </a>
+                <a href="https://youtube.com/@luofilm" target="_blank" rel="noreferrer"
+                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Youtube className="w-3.5 h-3.5" />
+                </a>
+                <a href="https://instagram.com/luofilm" target="_blank" rel="noreferrer"
+                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Quick Links</h4>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {[
+                  { label: "Home", href: "/" },
+                  { label: "Movies", href: "/movies" },
+                  { label: "Series", href: "/series" },
+                  { label: "TV Channel", href: "/tv" },
+                  { label: "Live Sport", href: "/sports" },
+                  { label: "Download App", href: "/downloads" },
+                ].map(({ label, href }) => (
+                  <li key={href}>
+                    <a href={href} className="hover:text-primary transition-colors">→ {label}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Legal &amp; Help</h4>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {[
+                  { label: "Privacy Policy", href: "/privacy" },
+                  { label: "Terms & Conditions", href: "/terms" },
+                  { label: "How to Use / Guide", href: "/how-to-use" },
+                  { label: "Subscribe", href: "#subscribe" },
+                  { label: "Agent Program", href: "#agent" },
+                  { label: "Settings", href: "/settings" },
+                ].map(({ label, href }) => (
+                  <li key={href}>
+                    <a href={href} className="hover:text-primary transition-colors">→ {label}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Contact Us</h4>
+              <ul className="space-y-3 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <Mail className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+                  <a href="mailto:support@luofilm.site" className="hover:text-primary transition-colors break-all">support@luofilm.site</a>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Phone className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+                  <span>+256 700 000 000</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+                  <span>Kampala, Uganda</span>
+                </li>
+              </ul>
+              <div className="mt-4">
+                <a
+                  href="mailto:support@luofilm.site"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Mail className="w-3 h-3" /> Send Message
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-border/40 pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-muted-foreground">
+            <p>© {new Date().getFullYear()} LUO FILM · <a href="https://luofilm.site" className="hover:text-primary">luofilm.site</a> · All rights reserved.</p>
+            <div className="flex items-center gap-3">
+              <a href="/privacy" className="hover:text-primary underline underline-offset-2 transition-colors">Privacy Policy</a>
+              <span>·</span>
+              <a href="/terms" className="hover:text-primary underline underline-offset-2 transition-colors">Terms</a>
+              <span>·</span>
+              <a href="/how-to-use" className="hover:text-primary transition-colors">Help</a>
+            </div>
           </div>
         </div>
       </footer>
