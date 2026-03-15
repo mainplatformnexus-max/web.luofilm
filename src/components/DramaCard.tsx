@@ -93,7 +93,7 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
             />
             {/* Rank number overlaid on poster - centered */}
             {showRank && rankNumber && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+              <div className="absolute inset-0 flex items-center justify-start pl-1.5 pointer-events-none bg-black/20">
                 <span
                   className="font-black leading-none select-none"
                   style={{
