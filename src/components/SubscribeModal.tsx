@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Crown, CheckCircle, Loader2, User, CreditCard, ArrowRight } from "lucide-react";
+import { X, Crown, CheckCircle, Loader2, User, CreditCard, ArrowRight, ShieldCheck } from "lucide-react";
 import { getUserByUid } from "@/lib/firebaseServices";
 import {
   createCheckoutSession,
@@ -29,7 +29,8 @@ const agentPlans = [
 
 const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [step, setStep] = useState<"plan" | "redirecting">("plan");
+  const [step, setStep] = useState<"plan" | "loading" | "checkout">("plan");
+  const [checkoutUrl, setCheckoutUrl] = useState<string>("");
   const [userDoc, setUserDoc] = useState<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -77,12 +78,11 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
     const planInfo = plans.find(p => p.id === selectedPlan);
     if (!planInfo) return;
 
-    setStep("redirecting");
+    setStep("loading");
 
     try {
       const redirectUrl = `${window.location.origin}/payment-success`;
 
-      // Save pending plan info to localStorage before redirecting
       savePendingPayment({
         type: mode === "agent" ? "agent_subscription" : "user_subscription",
         planId: planInfo.id,
@@ -109,8 +109,8 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
         },
       });
 
-      // Redirect to Fincra checkout
-      window.location.href = session.checkoutLink;
+      setCheckoutUrl(session.checkoutLink);
+      setStep("checkout");
     } catch (err: any) {
       toast({
         title: "Payment Error",
@@ -124,8 +124,71 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
   const handleClose = () => {
     setStep("plan");
     setSelectedPlan(null);
+    setCheckoutUrl("");
     onClose();
   };
+
+  const handleBackToPlan = () => {
+    setStep("plan");
+    setCheckoutUrl("");
+  };
+
+  // Checkout iframe modal
+  if (step === "checkout" && checkoutUrl) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={handleClose} />
+        <div className="relative w-full max-w-lg h-[85vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200 flex flex-col">
+          {/* Checkout modal header */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-card/95 backdrop-blur-sm shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-foreground text-sm font-semibold leading-tight">Secure Checkout</p>
+                <p className="text-muted-foreground text-[10px] leading-tight">Powered by Fincra</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBackToPlan}
+                className="text-muted-foreground hover:text-foreground text-xs transition-colors px-2 py-1 rounded-md hover:bg-secondary"
+              >
+                ← Change Plan
+              </button>
+              <button
+                onClick={handleClose}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Loading overlay inside iframe area */}
+          <div className="relative flex-1 bg-background">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+              <Loader2 className="w-7 h-7 text-primary animate-spin opacity-60" />
+              <p className="text-muted-foreground text-xs">Loading payment page...</p>
+            </div>
+            <iframe
+              src={checkoutUrl}
+              className="relative z-20 w-full h-full border-0 bg-transparent"
+              title="Fincra Checkout"
+              allow="payment"
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="px-5 py-2.5 border-t border-border bg-card/95 shrink-0 flex items-center justify-center gap-1.5">
+            <ShieldCheck className="w-3 h-3 text-muted-foreground" />
+            <span className="text-muted-foreground text-[10px]">256-bit SSL encrypted · Your payment is safe and secure</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
@@ -197,22 +260,19 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
             </button>
 
             <p className="text-center text-[10px] text-muted-foreground">
-              Secured by Fincra · You'll be redirected to complete payment
+              Secured by Fincra · Payment opens in a secure window
             </p>
           </div>
         )}
 
-        {/* Redirecting */}
-        {step === "redirecting" && (
+        {/* Loading */}
+        {step === "loading" && (
           <div className="px-6 pb-8 text-center space-y-4">
             <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
             <div>
-              <p className="text-foreground font-bold text-base">Opening Checkout</p>
+              <p className="text-foreground font-bold text-base">Preparing Checkout</p>
               <p className="text-muted-foreground text-xs mt-1">
-                Preparing your secure payment page...
-              </p>
-              <p className="text-muted-foreground text-[10px] mt-2">
-                You will be redirected to Fincra to complete your payment.
+                Setting up your secure payment session...
               </p>
             </div>
           </div>
