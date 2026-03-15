@@ -338,6 +338,18 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      {/* Site Footer */}
+      <footer className="mt-12 pb-24 lg:pb-8 border-t border-border/40 pt-6 px-4">
+        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+          <p>© {new Date().getFullYear()} LUO FILM · luofilm.site · All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <a href="/privacy" className="hover:text-primary transition-colors underline underline-offset-2">Privacy Policy</a>
+            <a href="/terms" className="hover:text-primary transition-colors underline underline-offset-2">Terms &amp; Conditions</a>
+            <a href="/how-to-use" className="hover:text-primary transition-colors">Help / Guide</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
