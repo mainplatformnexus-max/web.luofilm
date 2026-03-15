@@ -52,6 +52,7 @@ const TVPlayer = ({ src, name, category, onClose }: TVPlayerProps) => {
   const playerRef = useRef<shaka.Player | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -69,13 +70,24 @@ const TVPlayer = ({ src, name, category, onClose }: TVPlayerProps) => {
     const video = videoRef.current;
     let cancelled = false;
 
+    const doLoad = async (player: shaka.Player) => {
+      video.muted = true;
+      setLoading(true);
+      await player.load(src);
+      if (cancelled) return;
+      setLoading(false);
+      try {
+        await video.play();
+        video.muted = false;
+        setMuted(false);
+      } catch { /* autoplay blocked */ }
+    };
+
     const init = async () => {
-      // Destroy previous instance
       if (playerRef.current) {
         await playerRef.current.destroy();
         playerRef.current = null;
       }
-
       if (cancelled) return;
 
       const player = new shaka.Player();
@@ -83,47 +95,46 @@ const TVPlayer = ({ src, name, category, onClose }: TVPlayerProps) => {
 
       player.configure({
         streaming: {
-          bufferingGoal: 2,
-          rebufferingGoal: 0.5,
-          bufferBehind: 10,
-          segmentPrefetchLimit: 2,
-          retryParameters: { maxAttempts: 3, baseDelay: 200, backoffFactor: 1.5, fuzzFactor: 0.3 },
+          bufferingGoal: 1,
+          rebufferingGoal: 0.3,
+          bufferBehind: 5,
+          segmentPrefetchLimit: 3,
+          lowLatencyMode: true,
+          inaccurateManifestTolerance: 0,
+          stallEnabled: true,
+          stallThreshold: 1,
+          stallSkip: 0.1,
+          retryParameters: { maxAttempts: 5, baseDelay: 100, backoffFactor: 1.2, fuzzFactor: 0.1 },
         },
         manifest: {
-          retryParameters: { maxAttempts: 3, baseDelay: 200, backoffFactor: 1.5, fuzzFactor: 0.3 },
+          retryParameters: { maxAttempts: 5, baseDelay: 100, backoffFactor: 1.2, fuzzFactor: 0.1 },
           dash: { ignoreMinBufferTime: true },
         },
+      });
+
+      player.addEventListener("error", (e) => {
+        if (cancelled) return;
+        console.warn("Shaka error, retrying...", e);
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => {
+          if (!cancelled) doLoad(player).catch(() => {});
+        }, 800);
       });
 
       await player.attach(video);
       if (cancelled) return;
 
-      video.muted = true;
-      setLoading(true);
-
-      await player.load(src);
-      if (cancelled) return;
-
-      setLoading(false);
-      try {
-        await video.play();
-        setTimeout(() => { if (!cancelled) { video.muted = false; setMuted(false); } }, 300);
-      } catch { /* autoplay blocked */ }
+      await doLoad(player);
     };
 
     init().catch((err) => {
-      if (!cancelled) {
-        console.error("Player error:", err);
-        setLoading(false);
-      }
+      if (!cancelled) { console.error("Player init error:", err); setLoading(false); }
     });
 
     return () => {
       cancelled = true;
-      if (playerRef.current) {
-        playerRef.current.destroy();
-        playerRef.current = null;
-      }
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      if (playerRef.current) { playerRef.current.destroy(); playerRef.current = null; }
     };
   }, [src]);
 
@@ -333,25 +344,26 @@ const TVChannel = () => {
   const hasValidSubscription = isAdmin || hasSubscription;
   const requiresSubscription = !user || !hasValidSubscription;
 
+  const handleSelectChannel = (ch: TVChannelItem) => {
+    if (!ch.streamLink) return;
+    setActiveChannel(ch);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <HeroBanner page="home" compact />
-      <div className="h-3" />
-
-      {activeChannel && activeChannel.streamLink && (
+      {activeChannel && activeChannel.streamLink ? (
         requiresSubscription ? (
-          <div className="mb-6 md:mx-4 relative aspect-video bg-black rounded-2xl border border-border overflow-hidden">
-             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3 z-10">
-                <Lock className="w-12 h-12 text-primary" />
-                <p className="text-foreground text-sm font-bold">Subscription Required</p>
-                <p className="text-muted-foreground text-xs text-center px-8">
-                  Please subscribe to watch live TV channels.
-                </p>
-                <button onClick={() => setShowSubscribe(true)}
-                  className="bg-primary text-primary-foreground px-6 py-2 rounded-full text-xs font-bold hover:bg-primary/90">
-                  Subscribe Now
-                </button>
-             </div>
+          <div className="mb-6 md:mx-4 relative aspect-video bg-black md:rounded-2xl border border-border overflow-hidden">
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3 z-10">
+              <Lock className="w-12 h-12 text-primary" />
+              <p className="text-foreground text-sm font-bold">Subscription Required</p>
+              <p className="text-muted-foreground text-xs text-center px-8">Please subscribe to watch live TV channels.</p>
+              <button onClick={() => setShowSubscribe(true)}
+                className="bg-primary text-primary-foreground px-6 py-2 rounded-full text-xs font-bold hover:bg-primary/90">
+                Subscribe Now
+              </button>
+            </div>
           </div>
         ) : (
           <TVPlayer
@@ -361,6 +373,11 @@ const TVChannel = () => {
             onClose={() => setActiveChannel(null)}
           />
         )
+      ) : (
+        <>
+          <HeroBanner page="home" compact />
+          <div className="h-3" />
+        </>
       )}
 
       <SubscribeModal open={showSubscribe} onClose={() => setShowSubscribe(false)} />
@@ -370,7 +387,7 @@ const TVChannel = () => {
           {channels.map((ch) => (
             <div
               key={ch.id}
-              onClick={() => ch.streamLink && setActiveChannel(ch)}
+              onClick={() => handleSelectChannel(ch)}
               className={`bg-card border rounded-lg p-1.5 cursor-pointer transition-colors flex flex-col items-center text-center gap-1 ${activeChannel?.id === ch.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
             >
               {ch.logoUrl ? (
