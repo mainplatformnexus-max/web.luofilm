@@ -37,8 +37,37 @@ import { subscribeMovies, subscribeSeries } from "./lib/firebaseServices";
 import { useEffect, useRef, useState } from "react";
 import SubscribeModal from "./components/SubscribeModal";
 import { registerSubscribeModal } from "./lib/globalModals";
+import { initFCM, registerServiceWorker } from "./lib/pushNotifications";
 
 const queryClient = new QueryClient();
+
+const useFCMSetup = () => {
+  const { user } = useAuth();
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    registerServiceWorker().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const tryInit = () => {
+      if (initialized.current) return;
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      initialized.current = true;
+      initFCM(user.uid).catch(() => {});
+    };
+
+    tryInit();
+
+    if ('permissions' in navigator) {
+      navigator.permissions.query({ name: 'notifications' as PermissionName }).then(status => {
+        status.addEventListener('change', tryInit);
+      }).catch(() => {});
+    }
+  }, [user]);
+};
 
 const useWelcomeNotification = () => {
   const { user } = useAuth();
@@ -92,6 +121,7 @@ const AppLayout = () => {
   useNotificationTimer();
   useNotifications();
   useWelcomeNotification();
+  useFCMSetup();
 
   return (
     <>

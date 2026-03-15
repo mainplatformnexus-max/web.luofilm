@@ -30,7 +30,9 @@
   - `requestPushPermission()` — requests browser permission
   - `initFCM()` — initialises Firebase Cloud Messaging, gets FCM token, stores in Firestore `fcmTokens/{userId}`
 - Updated `useNotifications.ts` to use `showDeviceNotification()` for all notifications
-- **Note**: For truly offline/closed-browser push, set the VAPID key in `pushNotifications.ts` from Firebase Console → Project Settings → Cloud Messaging → Web Push Certificates
+- VAPID key configured: `BFjo2j1VFoVMApXtGuMP-TovW6Ut0sPpx7DOZQlRUnvluHgORSCtZ7p16fsQ02r6xXkLBENR9nuUurWrue_BARU`
+- FCM tokens are stored in Firestore `fcmTokens/{userId}` collection
+- `useFCMSetup` hook in `App.tsx` initialises FCM on login and when notification permission is granted
 
 ## Recent Updates (Session 4)
 

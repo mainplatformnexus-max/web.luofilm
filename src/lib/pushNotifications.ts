@@ -1,4 +1,4 @@
-const FCM_VAPID_KEY = "YOUR_FIREBASE_VAPID_KEY";
+const FCM_VAPID_KEY = "BFjo2j1VFoVMApXtGuMP-TovW6Ut0sPpx7DOZQlRUnvluHgORSCtZ7p16fsQ02r6xXkLBENR9nuUurWrue_BARU";
 
 let swRegistration: ServiceWorkerRegistration | null = null;
 
