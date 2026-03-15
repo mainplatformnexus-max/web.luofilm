@@ -63,7 +63,7 @@ const BottomNav = () => {
       <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden pb-[env(safe-area-inset-bottom)]">
         {/* Professional Bottom Nav */}
         <div className="bg-background border-t border-border shadow-2xl">
-          <div className="flex items-center justify-between px-0.5 py-2">
+          <div className="flex items-center justify-between px-0.5 py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -73,20 +73,17 @@ const BottomNav = () => {
                 <button
                   key={item.label}
                   onClick={() => handleClick(item.path)}
-                  className={`flex flex-col items-center py-1 px-1 flex-1 min-w-0 transition-all relative ${isAgent ? "z-10" : ""}`}
+                  className={`flex flex-col items-center py-0.5 px-1 flex-1 min-w-0 transition-all relative ${isAgent ? "z-10" : ""}`}
                 >
                   <div className={`relative flex items-center justify-center transition-all 
                     ${isAgent 
-                      ? "w-14 h-14 -mt-5 bg-primary text-primary-foreground rounded-full shadow-lg border-4 border-background scale-110" 
+                      ? "w-11 h-11 -mt-4 bg-primary text-primary-foreground rounded-full shadow-lg border-4 border-background" 
                       : active 
-                        ? "w-9 h-9 rounded-full bg-primary/10 text-primary" 
-                        : "w-9 h-9 rounded-full text-muted-foreground active:bg-secondary/50"
+                        ? "w-8 h-8 rounded-full bg-primary/10 text-primary" 
+                        : "w-8 h-8 rounded-full text-muted-foreground active:bg-secondary/50"
                     }`}>
-                    {isAgent ? <img src={logo} alt="" className="w-7 h-7 rounded-full object-contain" /> : <Icon className={`w-5 h-5`} />}
+                    {isAgent ? <img src={logo} alt="" className="w-6 h-6 rounded-full object-contain" /> : <Icon className="w-4 h-4" />}
                   </div>
-                  <span className={`text-[7.5px] mt-1 truncate ${active || isAgent ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                    {item.label}
-                  </span>
                 </button>
               );
             })}
@@ -95,7 +92,7 @@ const BottomNav = () => {
       </nav>
 
       {/* Spacer for bottom nav */}
-      <div className="h-20 lg:hidden" />
+      <div className="h-14 lg:hidden" />
 
       <AgentAccessModal
         open={showAgentAccess}
