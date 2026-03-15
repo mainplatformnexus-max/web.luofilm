@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell, X, Tv, Film, Star, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { showDeviceNotification } from "@/lib/pushNotifications";
 
 // ===================== CLING SOUND (Web Audio API) =====================
 export const playClingSound = () => {
@@ -53,6 +54,7 @@ export const showInAppNotification = (
   duration = 7000
 ) => {
   playClingSound();
+  showDeviceNotification(title, body, icon, url).catch(() => {});
   if (_setNotifs) {
     const id = Date.now();
     _setNotifs(prev => [...prev.slice(-2), { id, title, body, icon, url, buttons, accent, duration }]);
