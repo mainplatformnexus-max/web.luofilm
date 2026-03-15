@@ -953,18 +953,36 @@ const AgentSection = ({ agents, search }: { agents: AgentItem[]; search: string 
 };
 
 // ==================== USERS SECTION ====================
+const isSubActive = (u: UserItem) =>
+  !!(u.subscription && u.subscriptionExpiry && new Date(u.subscriptionExpiry).getTime() > Date.now());
+const isSubExpired = (u: UserItem) =>
+  !!(u.subscription && u.subscriptionExpiry && new Date(u.subscriptionExpiry).getTime() <= Date.now());
+
 const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserItem[]; usersWithoutPhone?: UserItem[]; search: string }) => {
-  const [tab, setTab] = useState<"all" | "active" | "never" | "incomplete">("all");
-  const allUsers = tab === "incomplete" ? usersWithoutPhone : users;
-  const filtered = [...allUsers]
-    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
-    .filter(u => {
-    const matchSearch = (u.name || "").toLowerCase().includes(search.toLowerCase()) || (u.phone || "").includes(search);
-    if (tab === "incomplete") return true; // Show all without phone
-    if (tab === "active") return matchSearch && u.subscription !== null;
-    if (tab === "never") return matchSearch && u.subscription === null;
+  const [tab, setTab] = useState<"all" | "active" | "expired" | "never" | "incomplete">("all");
+
+  const sortedUsers = [...users].sort((a, b) => {
+    const dateA = a.lastActive || a.createdAt || "";
+    const dateB = b.lastActive || b.createdAt || "";
+    return dateB.localeCompare(dateA);
+  });
+
+  const baseList = tab === "incomplete" ? usersWithoutPhone : sortedUsers;
+
+  const filtered = baseList.filter(u => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      (u.name || "").toLowerCase().includes(q) ||
+      (u.phone || "").includes(q) ||
+      (u.email || "").toLowerCase().includes(q) ||
+      (u.country || "").toLowerCase().includes(q);
+    if (tab === "incomplete") return true;
+    if (tab === "active") return matchSearch && isSubActive(u);
+    if (tab === "expired") return matchSearch && isSubExpired(u);
+    if (tab === "never") return matchSearch && !u.subscription;
     return matchSearch;
   });
+
   const [actionModal, setActionModal] = useState<{ type: string; user: UserItem } | null>(null);
   const [selectedPlan, setSelectedPlan] = useState("");
   const { toast } = useToast();
@@ -975,18 +993,17 @@ const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserIt
     try {
       if (type === "delete") { await deleteUser(user.id); toast({ title: "User deleted" }); }
       else if (type === "block") { await updateUser(user.id, { status: "blocked" }); toast({ title: "User blocked" }); }
-      else if (type === "activate" || type === "upgrade") { 
+      else if (type === "activate" || type === "upgrade") {
         const plan = adminPlans.find(p => p.name === selectedPlan);
         const expiry = new Date();
         const days = (plan as any)?.days || (plan?.duration.includes("Week") ? 7 : 30);
         expiry.setDate(expiry.getDate() + days);
-        
-        await updateUser(user.id, { 
-          status: "active", 
+        await updateUser(user.id, {
+          status: "active",
           subscription: selectedPlan || user.subscription,
           subscriptionExpiry: expiry.toISOString().split("T")[0]
-        }); 
-        toast({ title: "User updated" }); 
+        });
+        toast({ title: "User updated" });
       }
       else if (type === "deactivate") { await updateUser(user.id, { subscription: null, subscriptionExpiry: null }); toast({ title: "Subscription deactivated" }); }
     } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
@@ -994,77 +1011,97 @@ const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserIt
     setSelectedPlan("");
   };
 
+  const activeCount = users.filter(isSubActive).length;
+  const expiredCount = users.filter(isSubExpired).length;
+  const neverCount = users.filter(u => !u.subscription).length;
+
   const tabs = [
-    { key: "all", label: `All Users (${users.length})` },
-    { key: "active", label: `Active Subs (${users.filter(u => u.subscription).length})` },
-    { key: "never", label: `Never Subscribed (${users.filter(u => !u.subscription).length})` },
-    { key: "incomplete", label: `Incomplete Profile (${usersWithoutPhone.length})` }
+    { key: "all", label: `All (${users.length})` },
+    { key: "active", label: `Active Subs (${activeCount})` },
+    { key: "expired", label: `Expired (${expiredCount})` },
+    { key: "never", label: `Never Subscribed (${neverCount})` },
+    { key: "incomplete", label: `Incomplete (${usersWithoutPhone.length})` },
   ];
 
   return (
     <div>
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key as any)} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${tab === t.key ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>{t.label}</button>
         ))}
       </div>
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-xs">
           <thead><tr className="border-b border-border bg-secondary/50">
-            <th className="text-left p-3 text-muted-foreground font-medium">Name</th>
+            <th className="text-left p-3 text-muted-foreground font-medium">Name / Email</th>
             <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Phone</th>
             <th className="text-left p-3 text-muted-foreground font-medium hidden lg:table-cell">Country / Currency</th>
             <th className="text-center p-3 text-muted-foreground font-medium">Status</th>
             <th className="text-center p-3 text-muted-foreground font-medium hidden sm:table-cell">Subscription</th>
+            <th className="text-left p-3 text-muted-foreground font-medium hidden xl:table-cell">Joined</th>
             <th className="text-right p-3 text-muted-foreground font-medium">Actions</th>
           </tr></thead>
           <tbody>
-            {filtered.map(u => (
-              <tr key={u.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                <td className="p-3 font-medium text-foreground">{u.name}</td>
-                <td className="p-3 text-muted-foreground hidden md:table-cell">{u.phone}</td>
-                <td className="p-3 hidden lg:table-cell">
-                  {u.country ? (
+            {filtered.map(u => {
+              const active = isSubActive(u);
+              const expired = isSubExpired(u);
+              return (
+                <tr key={u.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                  <td className="p-3">
+                    <div className="font-medium text-foreground">{u.name}</div>
+                    {u.email && <div className="text-[10px] text-muted-foreground">{u.email}</div>}
+                  </td>
+                  <td className="p-3 text-muted-foreground hidden md:table-cell">{u.phone || <span className="text-muted-foreground/40">—</span>}</td>
+                  <td className="p-3 hidden lg:table-cell">
+                    {u.country ? (
+                      <div className="text-[10px]">
+                        <span className="text-foreground font-medium">{u.country}</span>
+                        {u.currency && (
+                          <span className="ml-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[9px] font-mono">
+                            {u.currencySymbol || ""}{u.currency}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground/40 text-[10px]">—</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-center">
+                    <Badge className={`text-[9px] border-0 ${u.status === "active" ? "bg-primary/20 text-primary" : u.status === "blocked" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>{u.status}</Badge>
+                  </td>
+                  <td className="p-3 text-center hidden sm:table-cell">
                     <div className="text-[10px]">
-                      <span className="text-foreground font-medium">{u.country}</span>
-                      {u.currency && (
-                        <span className="ml-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[9px] font-mono">
-                          {u.currencySymbol || ""}{u.currency}
-                        </span>
+                      {active ? (
+                        <>
+                          <span className="text-primary font-medium">{u.subscription}</span>
+                          <br />
+                          <span className="text-muted-foreground">Exp: {u.subscriptionExpiry}</span>
+                        </>
+                      ) : expired ? (
+                        <>
+                          <span className="text-destructive font-medium">Expired</span>
+                          <br />
+                          <span className="text-muted-foreground text-[9px]">{u.subscriptionExpiry}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground/60">None</span>
                       )}
                     </div>
-                  ) : (
-                    <span className="text-muted-foreground text-[10px]">—</span>
-                  )}
-                </td>
-                <td className="p-3 text-center">
-                  <Badge className={`text-[9px] border-0 ${u.status === "active" ? "bg-primary/20 text-primary" : u.status === "blocked" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>{u.status}</Badge>
-                </td>
-                <td className="p-3 text-center hidden sm:table-cell text-[10px]">
-                  <div className="text-[10px]">
-                    {u.subscriptionExpiry && new Date(u.subscriptionExpiry).getTime() > Date.now() ? (
-                      <>
-                        <span className="text-primary font-medium">{u.subscription}</span>
-                        <br />
-                        <span className="text-muted-foreground">Exp: {u.subscriptionExpiry}</span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">None</span>
-                    )}
-                  </div>
-                </td>
-                <td className="p-3 text-right">
-                  <div className="flex gap-0.5 justify-end flex-wrap">
-                    {u.status !== "blocked" && <button onClick={() => setActionModal({ type: "block", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"><Ban className="w-3 h-3" /></button>}
-                    {!u.subscription && <button onClick={() => setActionModal({ type: "activate", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary"><CheckCircle className="w-3 h-3" /></button>}
-                    {u.subscription && <button onClick={() => setActionModal({ type: "upgrade", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary"><ArrowUpDown className="w-3 h-3" /></button>}
-                    {u.subscription && <button onClick={() => setActionModal({ type: "deactivate", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-accent"><AlertTriangle className="w-3 h-3" /></button>}
-                    <button onClick={() => setActionModal({ type: "delete", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"><Trash2 className="w-3 h-3" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">No users yet.</td></tr>}
+                  </td>
+                  <td className="p-3 text-muted-foreground hidden xl:table-cell text-[10px]">{u.createdAt || "—"}</td>
+                  <td className="p-3 text-right">
+                    <div className="flex gap-0.5 justify-end flex-wrap">
+                      {u.status !== "blocked" && <button onClick={() => setActionModal({ type: "block", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-destructive" title="Block"><Ban className="w-3 h-3" /></button>}
+                      {!active && <button onClick={() => setActionModal({ type: "activate", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary" title="Activate Subscription"><CheckCircle className="w-3 h-3" /></button>}
+                      {active && <button onClick={() => setActionModal({ type: "upgrade", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary" title="Upgrade Plan"><ArrowUpDown className="w-3 h-3" /></button>}
+                      {(active || expired) && <button onClick={() => setActionModal({ type: "deactivate", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-accent" title="Deactivate Subscription"><AlertTriangle className="w-3 h-3" /></button>}
+                      <button onClick={() => setActionModal({ type: "delete", user: u })} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground text-xs">No users found.</td></tr>}
           </tbody>
         </table>
       </div>

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle, XCircle, Loader2, Crown } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Crown, Clock } from "lucide-react";
 import {
   verifyCheckoutPayment,
   loadPendingPayment,
@@ -22,6 +22,12 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 type Status = "verifying" | "success" | "failed";
+
+const POLL_INTERVAL_MS = 3000;
+const MAX_POLL_ATTEMPTS = 30;
+
+const SUCCESSFUL_STATUSES = ["successful", "success", "completed", "paid"];
+const FAILED_STATUSES = ["failed", "cancelled", "canceled", "declined", "error", "reversed"];
 
 const getDeviceId = (): string => {
   let id = localStorage.getItem("luo_device_id");
@@ -49,43 +55,75 @@ const PaymentSuccess = () => {
   const [agentId, setAgentId] = useState("");
   const [isAudience, setIsAudience] = useState(false);
   const [shareCode, setShareCode] = useState("");
+  const [pollAttempt, setPollAttempt] = useState(0);
+  const [pollStatus, setPollStatus] = useState("Connecting to payment provider...");
+  const stopPolling = useRef(false);
 
   useEffect(() => {
-    const run = async () => {
-      const reference = searchParams.get("reference");
+    const reference = searchParams.get("reference");
 
-      if (!reference) {
-        setStatus("failed");
-        setMessage("No payment reference found. Please contact support.");
-        return;
-      }
+    if (!reference) {
+      setStatus("failed");
+      setMessage("No payment reference found. Please contact support.");
+      return;
+    }
 
-      // Prevent double-activation
-      if (isReferenceUsed(reference)) {
-        setStatus("failed");
-        setMessage("This payment has already been activated. If you need help, contact support.");
-        return;
-      }
+    if (isReferenceUsed(reference)) {
+      setStatus("failed");
+      setMessage("This payment has already been activated. If you need help, contact support.");
+      return;
+    }
 
-      // Verify payment with the backend
+    let attempt = 0;
+
+    const poll = async () => {
+      if (stopPolling.current) return;
+
+      attempt++;
+      setPollAttempt(attempt);
+      setPollStatus(`Checking payment status... (${attempt}/${MAX_POLL_ATTEMPTS})`);
+
       let verifyResult;
       try {
         verifyResult = await verifyCheckoutPayment(reference);
       } catch {
-        setStatus("failed");
-        setMessage("Could not verify payment. Contact support with reference: " + reference);
+        if (attempt >= MAX_POLL_ATTEMPTS) {
+          setStatus("failed");
+          setMessage(`Could not reach payment provider after ${MAX_POLL_ATTEMPTS} attempts. Contact support with reference: ${reference}`);
+          return;
+        }
+        setTimeout(poll, POLL_INTERVAL_MS);
         return;
       }
 
-      if (verifyResult.status !== "successful") {
+      const rawStatus = (verifyResult.status || "").toLowerCase();
+
+      if (SUCCESSFUL_STATUSES.some(s => rawStatus.includes(s))) {
+        await activate(reference);
+        return;
+      }
+
+      if (FAILED_STATUSES.some(s => rawStatus.includes(s))) {
         setStatus("failed");
         setMessage(
-          `Payment status: ${verifyResult.status}. If this is an error, contact support with reference: ${reference}`
+          `Payment was ${verifyResult.status}. If this is an error, contact support with reference: ${reference}`
         );
         return;
       }
 
-      // Load pending plan from localStorage
+      if (attempt >= MAX_POLL_ATTEMPTS) {
+        setStatus("failed");
+        setMessage(
+          `Payment is still pending after checking ${MAX_POLL_ATTEMPTS} times. If you completed the payment, contact support with reference: ${reference}`
+        );
+        return;
+      }
+
+      setPollStatus(`Payment pending — checking again in 3 seconds... (${attempt}/${MAX_POLL_ATTEMPTS})`);
+      setTimeout(poll, POLL_INTERVAL_MS);
+    };
+
+    const activate = async (reference: string) => {
       const pending = loadPendingPayment();
       if (!pending) {
         setStatus("failed");
@@ -93,14 +131,12 @@ const PaymentSuccess = () => {
         return;
       }
 
-      // Mark reference as used
       markReferenceUsed(reference);
 
       try {
         const now = new Date();
         const nowStr = now.toISOString().split("T")[0];
 
-        // ── USER SUBSCRIPTION ───────────────────────────────────────
         if (pending.type === "user_subscription") {
           const expiry = new Date(now);
           expiry.setDate(expiry.getDate() + pending.planDays);
@@ -143,7 +179,6 @@ const PaymentSuccess = () => {
           } as any);
         }
 
-        // ── AGENT NEW SUBSCRIPTION ──────────────────────────────────
         else if (pending.type === "agent_subscription") {
           const expiry = new Date(now);
           expiry.setDate(expiry.getDate() + pending.planDays);
@@ -180,7 +215,6 @@ const PaymentSuccess = () => {
           setAgentId(newAgentId);
         }
 
-        // ── AGENT RENEWAL ───────────────────────────────────────────
         else if (pending.type === "agent_renewal" && pending.agentDocId) {
           const expiry = new Date(now);
           expiry.setDate(expiry.getDate() + pending.planDays);
@@ -206,7 +240,6 @@ const PaymentSuccess = () => {
           } as any);
         }
 
-        // ── AUDIENCE CONTENT PURCHASE ───────────────────────────────
         else if (pending.type === "audience_content" && pending.shareCode) {
           await addTransaction({
             userId: pending.userId || "guest",
@@ -228,7 +261,6 @@ const PaymentSuccess = () => {
             });
           }
 
-          // Credit agent balance
           if (pending.agentId) {
             try {
               const agent = await getAgentByAgentId(pending.agentId);
@@ -243,7 +275,6 @@ const PaymentSuccess = () => {
             }
           }
 
-          // Grant timed access
           if (pending.accessDuration) {
             grantAudienceAccess(pending.shareCode, pending.accessDuration);
           }
@@ -260,7 +291,11 @@ const PaymentSuccess = () => {
       }
     };
 
-    run();
+    poll();
+
+    return () => {
+      stopPolling.current = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -283,8 +318,23 @@ const PaymentSuccess = () => {
           <>
             <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-4" />
             <h2 className="text-foreground font-bold text-lg mb-2">Verifying Payment</h2>
-            <p className="text-muted-foreground text-sm">
-              Please wait while we confirm your payment and activate your plan...
+            <p className="text-muted-foreground text-sm mb-3">
+              Please wait while we confirm your payment...
+            </p>
+            <div className="bg-secondary rounded-xl p-3">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground text-xs">{pollStatus}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-1.5">
+                <div
+                  className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min((pollAttempt / MAX_POLL_ATTEMPTS) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            <p className="text-muted-foreground text-[10px] mt-3">
+              Do not close this page — we're checking your payment automatically.
             </p>
           </>
         )}

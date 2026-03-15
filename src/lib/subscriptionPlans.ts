@@ -125,6 +125,20 @@ export const PLANS_BY_CURRENCY: Record<string, CurrencyPlans> = {
       { id: "agent-1month", label: "Agent 1 Month", price: "20", priceNum: 20, duration: "30 days Agent access",  days: 30 },
     ],
   },
+  EUR: {
+    normal: [
+      { id: "1day",   label: "1 Day",   price: "1",  priceNum: 1,  duration: "24 hours access",  days: 1 },
+      { id: "2days",  label: "2 Days",  price: "2",  priceNum: 2,  duration: "2 days access",    days: 2 },
+      { id: "1week",  label: "1 Week",  price: "4",  priceNum: 4,  duration: "7 days access",    days: 7 },
+      { id: "2weeks", label: "2 Weeks", price: "6",  priceNum: 6,  duration: "14 days access",   days: 14 },
+      { id: "1month", label: "1 Month", price: "12", priceNum: 12, duration: "30 days access",   days: 30 },
+    ],
+    agent: [
+      { id: "agent-1day",   label: "Agent 1 Day",   price: "2",  priceNum: 2,  duration: "24 hours Agent access", days: 1 },
+      { id: "agent-1week",  label: "Agent 1 Week",  price: "10", priceNum: 10, duration: "7 days Agent access",   days: 7 },
+      { id: "agent-1month", label: "Agent 1 Month", price: "20", priceNum: 20, duration: "30 days Agent access",  days: 30 },
+    ],
+  },
   XOF: {
     normal: [
       { id: "1day",   label: "1 Day",   price: "600",   priceNum: 600,  duration: "24 hours access",  days: 1 },
@@ -163,8 +177,8 @@ export const PAYMENT_METHODS_LABEL: Record<string, string> = {
   ZMW: "Card or Mobile Money",
   TZS: "Mobile Money",
   ZAR: "Card or EFT",
-  USD: "Card or Virtual Account",
-  EUR: "Card or Virtual Account",
+  USD: "Card",
+  EUR: "Card",
   XOF: "Mobile Money",
   XAF: "Mobile Money",
 };
@@ -177,8 +191,8 @@ export const PAYMENT_METHODS_API: Record<string, string[]> = {
   ZMW: ["card", "mobile_money"],
   TZS: ["mobile_money"],
   ZAR: ["card", "eft"],
-  USD: ["card", "virtual_account"],
-  EUR: ["card", "virtual_account"],
+  USD: ["card"],
+  EUR: ["card"],
   XOF: ["mobile_money"],
   XAF: ["mobile_money"],
 };
