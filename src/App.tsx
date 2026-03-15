@@ -44,28 +44,40 @@ const queryClient = new QueryClient();
 const useFCMSetup = () => {
   const { user } = useAuth();
   const initialized = useRef(false);
+  const userRef = useRef(user);
+
+  useEffect(() => { userRef.current = user; }, [user]);
 
   useEffect(() => {
     registerServiceWorker().catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
 
     const tryInit = () => {
       if (initialized.current) return;
+      const u = userRef.current;
+      if (!u) return;
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
       initialized.current = true;
-      initFCM(user.uid).catch(() => {});
+      initFCM(u.uid).catch(() => {});
     };
 
-    tryInit();
+    window.addEventListener('notification-permission-granted', tryInit);
 
     if ('permissions' in navigator) {
       navigator.permissions.query({ name: 'notifications' as PermissionName }).then(status => {
         status.addEventListener('change', tryInit);
       }).catch(() => {});
     }
+
+    return () => {
+      window.removeEventListener('notification-permission-granted', tryInit);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user || initialized.current) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    initialized.current = true;
+    initFCM(user.uid).catch(() => {});
   }, [user]);
 };
 

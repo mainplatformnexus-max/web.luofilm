@@ -731,7 +731,7 @@ const Watch = () => {
       <div className="flex flex-col lg:flex-row">
         <div className="flex-1 min-w-0">
           {/* Video Player */}
-          <div className="relative w-full max-h-[480px] aspect-video bg-black">
+          <div className="relative w-full bg-black" style={{ aspectRatio: '16/9', maxHeight: 'clamp(240px, 56vw, 520px)' }}>
             {requiresSubscription ? (
               <div className="w-full h-full relative">
                 <img src={drama.image} alt={drama.title} className="w-full h-full object-cover blur-sm" />

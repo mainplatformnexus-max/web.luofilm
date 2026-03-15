@@ -211,6 +211,7 @@ export const NotificationPrompt = () => {
     const perm = await Notification.requestPermission();
     setShow(false);
     if (perm === 'granted') {
+      window.dispatchEvent(new Event('notification-permission-granted'));
       showInAppNotification(
         "Notifications Enabled",
         "You'll get alerts for new movies, live sports & more.",

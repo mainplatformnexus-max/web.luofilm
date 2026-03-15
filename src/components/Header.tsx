@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Download, User, Home, Film, Tv, Radio, Trophy, Crown, ShieldCheck, Menu, X, Settings, LogOut, HelpCircle, Search, Zap } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -8,6 +8,7 @@ import AgentAccessModal from "./AgentAccessModal";
 import GlobalSearch from "./GlobalSearch";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { detectGeo, getFlagUrl } from "@/lib/geoDetect";
 
 const ADMIN_EMAIL = "mainplatform.nexus@gmail.com";
 
@@ -34,6 +35,13 @@ const Header = () => {
   const [showAgentAccess, setShowAgentAccess] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { canInstall, install } = usePWAInstall();
+  const [countryFlag, setCountryFlag] = useState<{ code: string; name: string } | null>(null);
+
+  useEffect(() => {
+    detectGeo().then(geo => {
+      setCountryFlag({ code: geo.countryCode, name: geo.countryName });
+    }).catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -91,6 +99,16 @@ const Header = () => {
 
           <div className="flex items-center gap-1.5 shrink-0">
             <GlobalSearch />
+            {countryFlag && (
+              <div className="hidden sm:flex items-center" title={countryFlag.name}>
+                <img
+                  src={getFlagUrl(countryFlag.code)}
+                  alt={countryFlag.name}
+                  className="w-6 h-4 object-cover rounded-[3px] border border-border/50"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
             <button
               onClick={() => navigate("/how-to-use")}
               className="flex items-center gap-1.5 bg-secondary text-foreground text-[10px] font-medium px-3 py-1.5 rounded-full border border-border hover:bg-secondary/80 transition-all active:scale-95"

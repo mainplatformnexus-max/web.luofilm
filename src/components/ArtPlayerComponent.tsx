@@ -93,22 +93,31 @@ const ArtPlayerComponent: React.FC<ArtPlayerComponentProps> = ({ src, poster, ti
   }, [src, title]);
 
   return (
-    <div className="w-full h-full bg-black rounded-lg overflow-hidden flex items-center justify-center">
-      <div className="w-full aspect-video">
-        <video 
-          ref={videoRef} 
-          className="plyr-react plyr" 
-          playsInline 
-          data-poster={poster}
-        />
-      </div>
+    <div className="w-full h-full bg-black overflow-hidden">
+      <video
+        ref={videoRef}
+        className="plyr-react plyr w-full h-full"
+        playsInline
+        data-poster={poster}
+      />
       <style>{`
         .plyr {
-          height: 100%;
           width: 100%;
+          height: 100%;
         }
         .plyr--video {
-          aspect-ratio: 16/9;
+          width: 100%;
+          height: 100%;
+        }
+        .plyr video {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .plyr__video-wrapper {
+          width: 100%;
+          height: 100%;
+          aspect-ratio: unset;
         }
       `}</style>
     </div>
