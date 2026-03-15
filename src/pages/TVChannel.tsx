@@ -371,17 +371,16 @@ const TVChannel = () => {
             <div
               key={ch.id}
               onClick={() => ch.streamLink && setActiveChannel(ch)}
-              className={`bg-card border rounded-lg p-2 cursor-pointer transition-colors flex flex-col items-center text-center gap-1 ${activeChannel?.id === ch.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+              className={`bg-card border rounded-lg p-1.5 cursor-pointer transition-colors flex flex-col items-center text-center gap-1 ${activeChannel?.id === ch.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
             >
               {ch.logoUrl ? (
-                <img src={ch.logoUrl} alt={ch.name} className="w-8 h-8 rounded-md object-cover" />
+                <img src={ch.logoUrl} alt={ch.name} className="w-full aspect-square rounded-md object-cover" />
               ) : (
-                <div className="w-8 h-8 bg-primary/20 rounded-md flex items-center justify-center">
+                <div className="w-full aspect-square bg-primary/20 rounded-md flex items-center justify-center">
                   <span className="text-primary text-[9px] font-bold">TV</span>
                 </div>
               )}
-              <p className="text-foreground text-[10px] font-medium leading-tight line-clamp-1">{ch.name}</p>
-              <p className="text-muted-foreground text-[8px] leading-tight">{ch.category}</p>
+              <p className="text-foreground text-[9px] font-medium leading-tight line-clamp-1">{ch.name}</p>
             </div>
           ))}
         </div>
@@ -397,7 +396,7 @@ const TVChannel = () => {
       {latestUpdates.length > 0 && (
         <div className="px-4 md:px-8 mb-8">
           <h2 className="text-foreground text-xs font-semibold tracking-tight mb-4 flex items-center gap-1.5"><Newspaper className="w-3.5 h-3.5 text-primary" /> Latest Updates</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {latestUpdates.map((update) => (
               <a key={update.id} href={update.linkUrl || "#"} target={update.linkUrl ? "_blank" : undefined} rel="noopener noreferrer"
                 className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-colors group">
@@ -406,10 +405,9 @@ const TVChannel = () => {
                     <img src={update.imageUrl} alt={update.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   </div>
                 )}
-                <div className="p-3">
-                  <h3 className="text-foreground text-xs font-bold line-clamp-2">{update.title}</h3>
-                  {update.description && <p className="text-muted-foreground text-[10px] mt-1 line-clamp-2">{update.description}</p>}
-                  <p className="text-muted-foreground text-[9px] mt-2">{new Date(update.createdAt).toLocaleDateString()}</p>
+                <div className="p-2">
+                  <h3 className="text-foreground text-[10px] font-bold line-clamp-2">{update.title}</h3>
+                  <p className="text-muted-foreground text-[9px] mt-1">{new Date(update.createdAt).toLocaleDateString()}</p>
                 </div>
               </a>
             ))}
