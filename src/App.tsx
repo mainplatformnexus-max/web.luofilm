@@ -27,6 +27,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Downloads from "./pages/Downloads";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
 import NotFound from "./pages/NotFound";
 import { useNotificationTimer } from "./hooks/useNotificationTimer";
 import { useNotifications, showWelcomeNotification } from "./hooks/useNotifications";
@@ -119,6 +121,8 @@ const AppLayout = () => {
         <Route path="/how-to-use" element={<HowToUse />} />
         <Route path="/sitemap" element={<Sitemap />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isAudiencePage && <BottomNav />}

@@ -1,5 +1,37 @@
 # LUO FILM Project Documentation
 
+## Recent Updates (Session 5)
+
+### reCAPTCHA Enterprise Integration
+- Added Google reCAPTCHA Enterprise script (`6LfgMYssAAAAACqxofm7doVagxWPMlhuzx3AVWdz`) to `index.html`
+- `LoginModal.tsx` now calls `grecaptcha.enterprise.execute()` on login, registration, and Google sign-in
+- Tokens generated for actions: `LOGIN`, `REGISTER`
+
+### Privacy Policy & Terms Pages
+- Created `src/pages/PrivacyPolicy.tsx` — full privacy policy including reCAPTCHA, FCM, data retention, user rights
+- Created `src/pages/TermsAndConditions.tsx` — full terms covering accounts, Google sign-in, subscriptions, agent program, adult content
+- Routes added: `/privacy` and `/terms`
+- Login modal footer includes links to both pages
+- Register form shows "By creating an account, you agree to our Terms & Privacy Policy"
+
+### Google Sign-In Profile Completion — Country Selector
+- `PhoneSetupModal.tsx` now includes full country dropdown (all world countries) with flag images
+- Auto-detects user's country via IP geolocation
+- Saves `country`, `countryCode`, `currency`, `currencySymbol` to Firestore alongside phone number
+
+### Real Device Push Notifications (Service Worker)
+- Created `public/firebase-messaging-sw.js` — Firebase Cloud Messaging service worker
+  - Handles `push` events from FCM even when browser/app is closed
+  - Handles `notificationclick` to navigate user to correct page
+  - Handles `install`/`activate` lifecycle events
+- Created `src/lib/pushNotifications.ts`:
+  - `registerServiceWorker()` — registers the FCM SW on startup
+  - `showDeviceNotification()` — uses `ServiceWorkerRegistration.showNotification()` for real OS-level notifications, falls back to `new Notification()`
+  - `requestPushPermission()` — requests browser permission
+  - `initFCM()` — initialises Firebase Cloud Messaging, gets FCM token, stores in Firestore `fcmTokens/{userId}`
+- Updated `useNotifications.ts` to use `showDeviceNotification()` for all notifications
+- **Note**: For truly offline/closed-browser push, set the VAPID key in `pushNotifications.ts` from Firebase Console → Project Settings → Cloud Messaging → Web Push Certificates
+
 ## Recent Updates (Session 4)
 
 ### Homepage Redesign

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { subscribeMovies, subscribeSeries, subscribeTVChannels } from '@/lib/firebaseServices';
 import { showInAppNotification, type NotifButton } from '@/components/NotificationPrompt';
+import { showDeviceNotification, registerServiceWorker, requestPushPermission } from '@/lib/pushNotifications';
 
 const sendBrowserNotification = (
   title: string,
@@ -12,24 +13,9 @@ const sendBrowserNotification = (
   duration?: number
 ) => {
   showInAppNotification(title, body, icon, url, buttons, accent, duration);
-
-  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-    try {
-      const notif = new Notification(title, {
-        body,
-        icon: icon || '/logo.png',
-        badge: '/logo.png',
-      });
-      notif.onclick = () => {
-        window.focus();
-        if (url) window.location.href = url;
-        notif.close();
-      };
-    } catch (e) {}
-  }
+  showDeviceNotification(title, body, icon, url, `lf-${Date.now()}`);
 };
 
-// Track last watched movie poster for subscription promo
 export const trackWatchedMovie = (poster: string, movieId: string) => {
   try {
     localStorage.setItem('lf-last-watched', JSON.stringify({ poster, movieId, ts: Date.now() }));
@@ -44,7 +30,8 @@ export const useNotifications = () => {
   const allSeriesRef = useRef<any[]>([]);
 
   useEffect(() => {
-    // Collect TV channel posters for notifications
+    registerServiceWorker().catch(() => {});
+
     const unsubTV = subscribeTVChannels((channels) => {
       const active = channels.filter(c => c.isActive || !c.isActive);
       if (active.length > 0) {
@@ -53,7 +40,6 @@ export const useNotifications = () => {
       }
     });
 
-    // Listen for new movies
     const unsubMovies = subscribeMovies((movies) => {
       allMoviesRef.current = movies;
       const sorted = [...movies].sort((a, b) => {
@@ -82,7 +68,6 @@ export const useNotifications = () => {
       );
     });
 
-    // Listen for new series
     const unsubSeries = subscribeSeries((series) => {
       allSeriesRef.current = series;
       const sorted = [...series].sort((a, b) => {
@@ -111,7 +96,6 @@ export const useNotifications = () => {
       );
     });
 
-    // TV CHANNEL notification after 2 minutes
     const tvTimer = setTimeout(() => {
       sendBrowserNotification(
         'Watch Live TV & Sports Now',
@@ -127,7 +111,6 @@ export const useNotifications = () => {
       );
     }, 2 * 60 * 1000);
 
-    // Subscription promo after 5 minutes
     const subTimer = setTimeout(() => {
       const lastWatched = (() => {
         try { return JSON.parse(localStorage.getItem('lf-last-watched') || '{}'); } catch { return {}; }
@@ -150,7 +133,6 @@ export const useNotifications = () => {
       );
     }, 5 * 60 * 1000);
 
-    // Rotating engagement messages every 12 minutes
     const engagementMessages = [
       {
         title: 'Premium Access – Subscribe Today',
@@ -231,15 +213,12 @@ export const useNotifications = () => {
   }, []);
 
   const requestPermission = async () => {
-    if (!('Notification' in window)) return false;
-    const perm = await Notification.requestPermission();
-    return perm === 'granted';
+    return requestPushPermission();
   };
 
   return { requestPermission };
 };
 
-// Welcome notification (called once per user session)
 export const showWelcomeNotification = (
   username: string,
   randomPoster: string

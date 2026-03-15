@@ -1,10 +1,41 @@
 import { useState, useEffect } from "react";
-import { X, Phone, Mail, Lock, User, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
+import { X, Phone, Mail, Lock, User, Eye, EyeOff, ChevronDown, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getUserByPhone } from "@/lib/firebaseServices";
 import { detectGeo, SUPPORTED_COUNTRIES, getFlagUrl } from "@/lib/geoDetect";
 import logo from "@/assets/logo.png";
+
+const RECAPTCHA_SITE_KEY = "6LfgMYssAAAAACqxofm7doVagxWPMlhuzx3AVWdz";
+
+declare global {
+  interface Window {
+    grecaptcha: {
+      enterprise: {
+        ready: (cb: () => void) => void;
+        execute: (key: string, opts: { action: string }) => Promise<string>;
+      };
+    };
+  }
+}
+
+const getRecaptchaToken = (action: string): Promise<string> => {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !window.grecaptcha?.enterprise) {
+      resolve("");
+      return;
+    }
+    window.grecaptcha.enterprise.ready(async () => {
+      try {
+        const token = await window.grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, { action });
+        resolve(token);
+      } catch {
+        resolve("");
+      }
+    });
+  });
+};
 
 interface LoginModalProps {
   open: boolean;
@@ -93,6 +124,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     if (!phone || !password) return;
     setLoading(true);
     try {
+      await getRecaptchaToken("LOGIN");
       const existing = await getUserByPhone(phone);
       if (!existing) {
         setMode("ask-email");
@@ -124,6 +156,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     if (!email || !name) return;
     setLoading(true);
     try {
+      await getRecaptchaToken("REGISTER");
       const existing = await getUserByPhone(phone);
       if (existing) {
         toast({ title: "Phone already registered", description: "This phone number is linked to another account.", variant: "destructive" });
@@ -145,6 +178,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     if (!phone || !password || !name || !email) return;
     setLoading(true);
     try {
+      await getRecaptchaToken("REGISTER");
       const existing = await getUserByPhone(phone);
       if (existing) {
         toast({ title: "Phone already registered", description: "This phone number is already linked to an account. Please log in instead.", variant: "destructive" });
@@ -165,6 +199,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
+      await getRecaptchaToken("LOGIN");
       const result = await loginWithGoogle();
       if (result.isNewUser) {
         toast({ title: "Welcome!", description: "Please complete your profile." });
@@ -178,8 +213,6 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
       setLoading(false);
     }
   };
-
-  const selectedCountry = SUPPORTED_COUNTRIES.find(c => c.code === countryCode);
 
   const CountrySelector = () => (
     <div className="relative">
@@ -279,6 +312,15 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
               className="w-full h-10 bg-primary text-primary-foreground font-semibold text-sm rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50">
               {loading ? "Please wait..." : "Sign In"}
             </button>
+            <div className="flex items-center justify-center gap-1 pt-1">
+              <Shield className="w-3 h-3 text-muted-foreground/60" />
+              <p className="text-muted-foreground/60 text-[10px]">
+                Protected by reCAPTCHA &mdash;{" "}
+                <Link to="/privacy" onClick={handleClose} className="hover:text-muted-foreground underline">Privacy</Link>
+                {" & "}
+                <Link to="/terms" onClick={handleClose} className="hover:text-muted-foreground underline">Terms</Link>
+              </p>
+            </div>
           </form>
         )}
 
@@ -338,6 +380,12 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
               className="w-full h-10 bg-primary text-primary-foreground font-semibold text-sm rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50">
               {loading ? "Please wait..." : "Create Account"}
             </button>
+            <p className="text-muted-foreground/70 text-[10px] text-center">
+              By creating an account, you agree to our{" "}
+              <Link to="/terms" onClick={handleClose} className="text-primary hover:underline">Terms</Link>
+              {" & "}
+              <Link to="/privacy" onClick={handleClose} className="text-primary hover:underline">Privacy Policy</Link>
+            </p>
           </form>
         )}
 
@@ -349,7 +397,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
               <span className="text-muted-foreground text-[10px]">OR</span>
               <div className="flex-1 h-px bg-border" />
             </div>
-            <div className="px-6 py-4">
+            <div className="px-6 py-3">
               <button type="button" onClick={handleGoogleLogin} disabled={loading}
                 className="w-full h-10 flex items-center justify-center gap-2 bg-secondary border border-border rounded-lg text-foreground text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50">
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -361,12 +409,17 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 Continue with Google
               </button>
             </div>
-            <div className="px-6 pb-6 text-center">
+            <div className="px-6 pb-4 text-center space-y-2">
               <p className="text-muted-foreground text-xs">
                 {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
                 <button type="button" onClick={() => setMode(mode === "login" ? "register" : "login")} className="text-primary font-medium hover:underline">
                   {mode === "login" ? "Sign Up" : "Sign In"}
                 </button>
+              </p>
+              <p className="text-muted-foreground/60 text-[10px]">
+                <Link to="/privacy" onClick={handleClose} className="hover:text-muted-foreground underline">Privacy Policy</Link>
+                {" · "}
+                <Link to="/terms" onClick={handleClose} className="hover:text-muted-foreground underline">Terms & Conditions</Link>
               </p>
             </div>
           </>
