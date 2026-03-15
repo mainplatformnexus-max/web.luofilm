@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Trophy, Users, ShieldAlert, Sparkles,
-  SlidersHorizontal, ChevronDown, X, Check, Star, Calendar,
+  SlidersHorizontal, ChevronDown, X, Check,
   Mail, Phone, MapPin, Facebook, Twitter, Youtube, Instagram,
 } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
@@ -47,106 +47,6 @@ const isStillActive = (d: Drama) => {
   return Math.floor((Date.now() - markedAt.getTime()) / (1000 * 60 * 60 * 24)) < 5;
 };
 
-const GenreDropdown = ({
-  active,
-  onChange,
-}: {
-  active: string;
-  onChange: (g: string) => void;
-}) => {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-  const isFiltered = active !== "All Videos";
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        btnRef.current && !btnRef.current.contains(target) &&
-        dropRef.current && !dropRef.current.contains(target)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const handleToggle = () => {
-    if (!open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 6, left: rect.left });
-    }
-    setOpen(o => !o);
-  };
-
-  return (
-    <div className="relative flex-shrink-0">
-      <button
-        ref={btnRef}
-        onClick={handleToggle}
-        className={`flex items-center gap-1 px-2 py-1 rounded-full border text-[9px] sm:text-[11px] sm:px-3 sm:py-1.5 font-semibold whitespace-nowrap transition-all ${
-          isFiltered
-            ? "bg-primary border-primary text-primary-foreground"
-            : "bg-secondary/60 border-border text-foreground hover:bg-secondary"
-        }`}
-      >
-        <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-        <span>{isFiltered ? active : "Genre"}</span>
-        {isFiltered
-          ? <X className="w-3 h-3" onClick={e => { e.stopPropagation(); onChange("All Videos"); setOpen(false); }} />
-          : <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
-        }
-      </button>
-
-      {open && createPortal(
-        <div
-          ref={dropRef}
-          className="fixed z-[9999] bg-card border border-border rounded-2xl shadow-2xl p-4 w-72 animate-in fade-in slide-in-from-top-2 duration-200"
-          style={{ top: pos.top, left: pos.left }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">Filter by Genre</span>
-            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-0.5 rounded">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <button
-            onClick={() => { onChange("All Videos"); setOpen(false); }}
-            className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-[10px] font-semibold mb-2 transition-all ${
-              active === "All Videos"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            <span>All Videos</span>
-            {active === "All Videos" && <Check className="w-3 h-3" />}
-          </button>
-          <div className="grid grid-cols-3 gap-1.5">
-            {genreTags.filter(t => t !== "All Videos").map(tag => (
-              <button
-                key={tag}
-                onClick={() => { onChange(tag); setOpen(false); }}
-                className={`flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg text-[10px] font-semibold transition-all text-left ${
-                  active === tag
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                <span className="truncate">{tag}</span>
-                {active === tag && <Check className="w-2.5 h-2.5 shrink-0" />}
-              </button>
-            ))}
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};
-
 const RATING_OPTIONS = [
   { label: "Any Rating", value: 0 },
   { label: "7.0+ ⭐", value: 7 },
@@ -165,25 +65,28 @@ const YEAR_OPTIONS = [
   { label: "Before 2020", value: "before-2020" },
 ];
 
-const SmallDropdown = ({
-  icon: Icon,
-  label,
-  active,
-  options,
-  onChange,
+const FilterDropdown = ({
+  activeGenre,
+  onGenreChange,
+  minRating,
+  onRatingChange,
+  activeYear,
+  onYearChange,
 }: {
-  icon: React.ElementType;
-  label: string;
-  active: string | number;
-  options: { label: string; value: string | number }[];
-  onChange: (v: string | number) => void;
+  activeGenre: string;
+  onGenreChange: (g: string) => void;
+  minRating: number;
+  onRatingChange: (v: number) => void;
+  activeYear: string;
+  onYearChange: (v: string) => void;
 }) => {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
-  const isFiltered = active !== "" && active !== 0;
-  const activeLabel = options.find(o => o.value === active)?.label || label;
+
+  const activeCount = (activeGenre !== "All Videos" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (activeYear ? 1 : 0);
+  const isFiltered = activeCount > 0;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -200,13 +103,19 @@ const SmallDropdown = ({
   const handleToggle = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 6, left: rect.left });
+      setPos({ top: rect.bottom + 6, left: Math.min(rect.left, window.innerWidth - 300) });
     }
     setOpen(o => !o);
   };
 
+  const clearAll = () => {
+    onGenreChange("All Videos");
+    onRatingChange(0);
+    onYearChange("");
+  };
+
   return (
-    <div className="flex-shrink-0">
+    <div className="relative flex-shrink-0">
       <button
         ref={btnRef}
         onClick={handleToggle}
@@ -216,33 +125,107 @@ const SmallDropdown = ({
             : "bg-secondary/60 border-border text-foreground hover:bg-secondary"
         }`}
       >
-        <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-        <span>{isFiltered ? activeLabel : label}</span>
+        <SlidersHorizontal className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        <span>Filter{isFiltered ? ` (${activeCount})` : ""}</span>
         {isFiltered
-          ? <X className="w-3 h-3" onClick={e => { e.stopPropagation(); onChange(typeof active === "number" ? 0 : ""); setOpen(false); }} />
+          ? <X className="w-3 h-3" onClick={e => { e.stopPropagation(); clearAll(); }} />
           : <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
         }
       </button>
+
       {open && createPortal(
         <div
           ref={dropRef}
-          className="fixed z-[9999] bg-card border border-border rounded-xl shadow-2xl py-1.5 min-w-[150px] animate-in fade-in slide-in-from-top-2 duration-200"
+          className="fixed z-[9999] bg-card border border-border rounded-2xl shadow-2xl p-4 w-80 max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200"
           style={{ top: pos.top, left: pos.left }}
         >
-          {options.map(opt => (
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">Filters</span>
+            <div className="flex items-center gap-2">
+              {isFiltered && (
+                <button onClick={clearAll} className="text-[9px] text-primary font-semibold hover:underline">
+                  Clear all
+                </button>
+              )}
+              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-0.5 rounded">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Genre Section */}
+          <div className="mb-4">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Genre</p>
             <button
-              key={String(opt.value)}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`flex items-center justify-between w-full px-3 py-2 text-[11px] font-semibold transition-colors ${
-                active === opt.value
-                  ? "bg-primary/10 text-primary"
-                  : "text-foreground hover:bg-secondary"
+              onClick={() => onGenreChange("All Videos")}
+              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-[10px] font-semibold mb-2 transition-all ${
+                activeGenre === "All Videos"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
               }`}
             >
-              <span>{opt.label}</span>
-              {active === opt.value && <Check className="w-3 h-3" />}
+              <span>All Videos</span>
+              {activeGenre === "All Videos" && <Check className="w-3 h-3" />}
             </button>
-          ))}
+            <div className="grid grid-cols-3 gap-1.5">
+              {genreTags.filter(t => t !== "All Videos").map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => onGenreChange(tag)}
+                  className={`flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg text-[10px] font-semibold transition-all text-left ${
+                    activeGenre === tag
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  <span className="truncate">{tag}</span>
+                  {activeGenre === tag && <Check className="w-2.5 h-2.5 shrink-0" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Year Section */}
+          <div className="mb-4">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Year</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {YEAR_OPTIONS.map(opt => (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => onYearChange(String(opt.value))}
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                    activeYear === String(opt.value)
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  {activeYear === String(opt.value) && <Check className="w-2.5 h-2.5" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rating Section */}
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Rating</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {RATING_OPTIONS.map(opt => (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => onRatingChange(Number(opt.value))}
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                    minRating === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  {minRating === opt.value && <Check className="w-2.5 h-2.5" />}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>,
         document.body
       )}
@@ -392,31 +375,14 @@ const Index = () => {
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center gap-2 px-3 md:px-6 py-2.5 overflow-x-auto scrollbar-hide">
 
-          {/* Genre filter */}
-          <GenreDropdown
-            active={activeGenre}
-            onChange={g => {
-              setActiveGenre(g);
-              setActiveTab("best");
-            }}
-          />
-
-          {/* Year filter */}
-          <SmallDropdown
-            icon={Calendar}
-            label="Year"
-            active={activeYear}
-            options={YEAR_OPTIONS}
-            onChange={v => { setActiveYear(String(v)); setActiveTab("best"); }}
-          />
-
-          {/* Rating filter */}
-          <SmallDropdown
-            icon={Star}
-            label="Rating"
-            active={minRating}
-            options={RATING_OPTIONS}
-            onChange={v => { setMinRating(Number(v)); setActiveTab("best"); }}
+          {/* Unified filter dropdown */}
+          <FilterDropdown
+            activeGenre={activeGenre}
+            onGenreChange={g => { setActiveGenre(g); setActiveTab("best"); }}
+            minRating={minRating}
+            onRatingChange={v => { setMinRating(v); setActiveTab("best"); }}
+            activeYear={activeYear}
+            onYearChange={v => { setActiveYear(v); setActiveTab("best"); }}
           />
 
           {/* Section tabs */}
@@ -467,7 +433,7 @@ const Index = () => {
       </div>
 
       {/* ── FULL FOOTER ─────────────────────────────────────── */}
-      <footer className="mt-16 border-t border-border/40 bg-background/80 pb-24 lg:pb-0">
+      <footer className="mt-8 border-t border-border/40 bg-background/80 pb-20 lg:pb-0">
         <div className="max-w-screen-xl mx-auto px-2 md:px-6 pt-6 md:pt-10 pb-4 md:pb-6">
           {/* Top grid — always 4 cols */}
           <div className="grid grid-cols-4 gap-2 md:gap-8 mb-6 md:mb-8">
@@ -513,7 +479,7 @@ const Index = () => {
                   { label: "Downloads", href: "/downloads" },
                 ].map(({ label, href }) => (
                   <li key={href}>
-                    <a href={href} className="hover:text-primary transition-colors">→ {label}</a>
+                    <a href={href} className="hover:text-primary transition-colors">{label}</a>
                   </li>
                 ))}
               </ul>
@@ -532,7 +498,7 @@ const Index = () => {
                   { label: "Settings", href: "/settings" },
                 ].map(({ label, href }) => (
                   <li key={href}>
-                    <a href={href} className="hover:text-primary transition-colors">→ {label}</a>
+                    <a href={href} className="hover:text-primary transition-colors">{label}</a>
                   </li>
                 ))}
               </ul>
@@ -548,7 +514,7 @@ const Index = () => {
                 </li>
                 <li className="flex items-start gap-1">
                   <Phone className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 shrink-0 mt-0.5 text-primary" />
-                  <span>+256 700 000 000</span>
+                  <a href="https://wa.me/256760734679" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors">+256760734679</a>
                 </li>
                 <li className="flex items-start gap-1">
                   <MapPin className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 shrink-0 mt-0.5 text-primary" />
@@ -557,10 +523,12 @@ const Index = () => {
               </ul>
               <div className="mt-2 md:mt-4">
                 <a
-                  href="mailto:support@luofilm.site"
-                  className="inline-flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 bg-primary text-primary-foreground text-[7px] md:text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors"
+                  href="https://wa.me/256760734679"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 bg-[#25D366] text-white text-[7px] md:text-[10px] font-bold rounded-lg hover:bg-[#1ebe59] transition-colors"
                 >
-                  <Mail className="w-2 h-2 md:w-3 md:h-3" /> Message
+                  <Phone className="w-2 h-2 md:w-3 md:h-3" /> WhatsApp
                 </a>
               </div>
             </div>

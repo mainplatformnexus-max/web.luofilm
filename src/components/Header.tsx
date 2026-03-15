@@ -70,7 +70,7 @@ const Header = () => {
         <div className="flex items-center justify-between px-2 sm:px-4 md:px-8 h-11 sm:h-14">
           <Link to="/" className="flex items-center gap-1 shrink-0">
             <img src={logo} alt="LUO FILM" className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-contain" />
-            <span className="text-foreground font-bold text-[10px] sm:text-sm">LUO FILM</span>
+            <span className="text-foreground font-bold text-xs sm:text-sm">LUO FILM</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 mx-4 bg-secondary/60 rounded-full px-1.5 py-1 border border-border">
