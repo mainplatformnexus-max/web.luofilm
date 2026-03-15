@@ -6,6 +6,7 @@ export interface CheckoutSessionParams {
   customerName: string;
   customerEmail: string;
   redirectUrl: string;
+  paymentMethods?: string[];
   metadata?: Record<string, string>;
 }
 
@@ -36,7 +37,7 @@ export const createCheckoutSession = async (
         email: params.customerEmail,
       },
       redirectUrl: params.redirectUrl,
-      paymentMethods: ["card", "bank_transfer"],
+      paymentMethods: params.paymentMethods || ["card", "bank_transfer"],
       metadata: params.metadata || {},
     }),
   });

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, Phone, Mail, Lock, User, Eye, EyeOff, Globe, ChevronDown } from "lucide-react";
+import { X, Phone, Mail, Lock, User, Eye, EyeOff, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getUserByPhone } from "@/lib/firebaseServices";
-import { detectGeo, SORTED_COUNTRIES } from "@/lib/geoDetect";
+import { detectGeo, SUPPORTED_COUNTRIES, getFlagUrl } from "@/lib/geoDetect";
 import logo from "@/assets/logo.png";
 
 interface LoginModalProps {
@@ -62,7 +62,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
   if (!open) return null;
 
   const handleSelectCountry = (code: string) => {
-    const info = SORTED_COUNTRIES.find(c => c.code === code);
+    const info = SUPPORTED_COUNTRIES.find(c => c.code === code);
     if (info) {
       setCountryCode(info.code);
       setCountryName(info.name);
@@ -73,7 +73,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     setCountrySearch("");
   };
 
-  const filteredCountries = SORTED_COUNTRIES.filter(c =>
+  const filteredCountries = SUPPORTED_COUNTRIES.filter(c =>
     c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
     c.currency.toLowerCase().includes(countrySearch.toLowerCase()) ||
     c.code.toLowerCase().includes(countrySearch.toLowerCase())
@@ -131,7 +131,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
         return;
       }
       await register(email, password, name, phone, countryName, countryCode, currency, currencySymbol);
-      toast({ title: "Account created!", description: "Welcome to iQIYI." });
+      toast({ title: "Account created!", description: "Welcome to LUO FILM." });
       handleClose();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Something went wrong", variant: "destructive" });
@@ -153,7 +153,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
         return;
       }
       await register(email, password, name, phone, countryName, countryCode, currency, currencySymbol);
-      toast({ title: "Account created!", description: "Welcome to iQIYI." });
+      toast({ title: "Account created!", description: "Welcome to LUO FILM." });
       handleClose();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Something went wrong", variant: "destructive" });
@@ -179,19 +179,26 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     }
   };
 
+  const selectedCountry = SUPPORTED_COUNTRIES.find(c => c.code === countryCode);
+
   const CountrySelector = () => (
     <div className="relative">
       <button
         type="button"
         onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-        className="w-full h-10 pl-10 pr-3 rounded-lg bg-secondary border border-border text-foreground text-sm text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary/50"
+        className="w-full h-10 px-3 rounded-lg bg-secondary border border-border text-foreground text-sm text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary/50"
       >
-        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <span className="flex items-center gap-1.5 flex-1 min-w-0">
-          <span className="truncate">{countryName}</span>
+        <span className="flex items-center gap-2 flex-1 min-w-0">
+          <img
+            src={getFlagUrl(countryCode)}
+            alt={countryName}
+            className="w-5 h-3.5 object-cover rounded-[2px] shrink-0"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <span className="truncate text-sm">{countryName}</span>
           <span className="text-muted-foreground text-[10px] shrink-0">({currency})</span>
         </span>
-        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform shrink-0 ${showCountryDropdown ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform shrink-0 ml-1 ${showCountryDropdown ? "rotate-180" : ""}`} />
       </button>
 
       {showCountryDropdown && (
@@ -206,16 +213,22 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
               className="w-full h-8 px-3 rounded-md bg-secondary border border-border text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
             />
           </div>
-          <div className="max-h-44 overflow-y-auto">
-            {filteredCountries.slice(0, 80).map(c => (
+          <div className="max-h-48 overflow-y-auto">
+            {filteredCountries.map(c => (
               <button
                 key={c.code}
                 type="button"
                 onClick={() => handleSelectCountry(c.code)}
-                className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-secondary transition-colors ${countryCode === c.code ? "bg-primary/10 text-primary" : "text-foreground"}`}
+                className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 hover:bg-secondary transition-colors ${countryCode === c.code ? "bg-primary/10 text-primary" : "text-foreground"}`}
               >
-                <span>{c.name}</span>
-                <span className="text-muted-foreground text-[10px]">{c.currency} {c.symbol}</span>
+                <img
+                  src={getFlagUrl(c.code)}
+                  alt={c.name}
+                  className="w-5 h-3.5 object-cover rounded-[2px] shrink-0"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <span className="flex-1 truncate">{c.name}</span>
+                <span className="text-muted-foreground text-[10px] shrink-0">{c.currency} {c.symbol}</span>
               </button>
             ))}
             {filteredCountries.length === 0 && (
@@ -241,7 +254,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
           </h2>
           <p className="text-muted-foreground text-xs mt-1">
             {mode === "login" ? "Sign in with your phone number"
-              : mode === "register" ? "Join iQIYI for free"
+              : mode === "register" ? "Join LUO FILM for free"
               : "Phone not found – enter your details to register"}
           </p>
         </div>
