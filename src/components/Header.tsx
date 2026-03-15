@@ -70,7 +70,7 @@ const Header = () => {
         <div className="flex items-center justify-between px-2 sm:px-4 md:px-8 h-11 sm:h-14">
           <Link to="/" className="flex items-center gap-1 shrink-0">
             <img src={logo} alt="LUO FILM" className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-contain" />
-            <span className="text-foreground font-bold text-xs sm:text-sm hidden sm:block">LUO FILM</span>
+            <span className="text-foreground font-bold text-[10px] sm:text-sm">LUO FILM</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 mx-4 bg-secondary/60 rounded-full px-1.5 py-1 border border-border">
@@ -156,8 +156,8 @@ const Header = () => {
               </div>
             ) : (
               <button onClick={() => setShowLogin(true)}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:shadow-[0_2px_12px_hsl(135_100%_37%/0.4)] text-[11px] font-bold px-4 py-1.5 rounded-full transition-all active:scale-95 shadow-sm">
-                <User className="w-3.5 h-3.5" />
+                className="flex items-center gap-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:shadow-[0_2px_12px_hsl(135_100%_37%/0.4)] text-[9px] sm:text-[11px] font-bold px-2 sm:px-4 py-1 sm:py-1.5 rounded-full transition-all active:scale-95 shadow-sm">
+                <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 Login
               </button>
             )}

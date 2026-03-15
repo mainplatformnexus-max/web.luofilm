@@ -444,16 +444,6 @@ const Index = () => {
       {/* ── CONTENT GRID ───────────────────────────────────────── */}
       <div className="px-3 md:px-6 pt-4">
 
-        {/* Section heading */}
-        <div className="flex items-center gap-1.5 mb-3">
-          {activeTab === "rankings" && <Trophy className="w-3.5 h-3.5 text-primary" />}
-          {activeTab === "agent"    && <Users className="w-3.5 h-3.5 text-primary" />}
-          {activeTab === "adult"    && <ShieldAlert className="w-3.5 h-3.5 text-primary" />}
-          {activeTab === "best"     && <Sparkles className="w-3.5 h-3.5 text-primary" />}
-          <h2 className="text-xs font-semibold text-foreground">{activeTitle}</h2>
-          <span className="text-[10px] text-muted-foreground ml-1">{activeContent.length}</span>
-        </div>
-
         {activeContent.length > 0 ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 md:gap-3">
             {activeContent.map(drama => (
@@ -480,10 +470,10 @@ const Index = () => {
       <footer className="mt-16 border-t border-border/40 bg-background/80 pb-24 lg:pb-0">
         <div className="max-w-screen-xl mx-auto px-4 md:px-6 pt-10 pb-6">
           {/* Top grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-8">
 
             {/* Brand */}
-            <div className="col-span-2 md:col-span-1">
+            <div className="col-span-1 sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg font-extrabold text-primary tracking-tight">LUO FILM</span>
               </div>
@@ -577,13 +567,13 @@ const Index = () => {
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-border/40 pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-muted-foreground">
+          <div className="border-t border-border/40 pt-5 flex flex-col items-center sm:flex-row sm:justify-between gap-2 text-[10px] text-muted-foreground text-center">
             <p>© {new Date().getFullYear()} LUO FILM · <a href="https://luofilm.site" className="hover:text-primary">luofilm.site</a> · All rights reserved.</p>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               <a href="/privacy" className="hover:text-primary underline underline-offset-2 transition-colors">Privacy Policy</a>
-              <span>·</span>
+              <span className="hidden sm:inline">·</span>
               <a href="/terms" className="hover:text-primary underline underline-offset-2 transition-colors">Terms</a>
-              <span>·</span>
+              <span className="hidden sm:inline">·</span>
               <a href="/how-to-use" className="hover:text-primary transition-colors">Help</a>
             </div>
           </div>

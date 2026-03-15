@@ -203,11 +203,7 @@ export const NotificationPrompt = () => {
   useEffect(() => {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
-    const dismissedAt = localStorage.getItem('notification-prompt-dismissed-at');
-    if (dismissedAt) {
-      const days = (Date.now() - Number(dismissedAt)) / (1000 * 60 * 60 * 24);
-      if (days < 3) return;
-    }
+    if (localStorage.getItem('notification-prompt-dismissed') === 'true') return;
     const timer = setTimeout(() => setShow(true), 3000);
     return () => clearTimeout(timer);
   }, []);
@@ -231,7 +227,7 @@ export const NotificationPrompt = () => {
 
   const handleDismiss = () => {
     setShow(false);
-    localStorage.setItem('notification-prompt-dismissed-at', String(Date.now()));
+    localStorage.setItem('notification-prompt-dismissed', 'true');
   };
 
   if (!show) return null;
