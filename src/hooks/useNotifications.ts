@@ -22,12 +22,28 @@ export const trackWatchedMovie = (poster: string, movieId: string) => {
   } catch (e) {}
 };
 
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+const RECENT_NOTIF_KEY = 'lf-recent-movie-notif';
+const RECENT_NOTIF_COOLDOWN = 6 * 60 * 60 * 1000; // 6 hours between visits
+
+const shouldShowRecentMovieNotif = (): boolean => {
+  try {
+    const last = parseInt(localStorage.getItem(RECENT_NOTIF_KEY) || '0', 10);
+    return Date.now() - last > RECENT_NOTIF_COOLDOWN;
+  } catch { return true; }
+};
+
+const markRecentMovieNotifShown = () => {
+  try { localStorage.setItem(RECENT_NOTIF_KEY, String(Date.now())); } catch { }
+};
+
 export const useNotifications = () => {
   const seenIds = useRef<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tvChannelPoster = useRef<string>('/logo.png');
   const allMoviesRef = useRef<any[]>([]);
   const allSeriesRef = useRef<any[]>([]);
+  const recentNotifFiredRef = useRef(false);
 
   useEffect(() => {
     registerServiceWorker().catch(() => {});
@@ -42,6 +58,38 @@ export const useNotifications = () => {
 
     const unsubMovies = subscribeMovies((movies) => {
       allMoviesRef.current = movies;
+
+      // --- On-visit: notify about movies uploaded in last 3 days ---
+      if (!recentNotifFiredRef.current && shouldShowRecentMovieNotif()) {
+        const now = Date.now();
+        const recentMovies = movies
+          .filter(m => m.createdAt && (now - new Date(m.createdAt).getTime()) <= THREE_DAYS_MS)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        if (recentMovies.length > 0) {
+          recentNotifFiredRef.current = true;
+          const pick = recentMovies[0];
+          const count = recentMovies.length;
+          const countText = count > 1 ? ` + ${count - 1} more new ${count - 1 === 1 ? 'movie' : 'movies'}` : '';
+          setTimeout(() => {
+            markRecentMovieNotifShown();
+            sendBrowserNotification(
+              `🎬 New on LUO FILM: ${pick.name}`,
+              `Just added${countText}! Watch now in Luo translation.`,
+              pick.posterUrl || '/logo.png',
+              `/watch/${pick.id}`,
+              [
+                { label: 'Watch Now', url: `/watch/${pick.id}`, color: 'hsl(var(--primary))' },
+                { label: 'See All New', url: '/movies', color: '#374151' },
+              ],
+              'hsl(var(--primary))',
+              10000
+            );
+          }, 6000);
+        }
+      }
+
+      // --- Real-time: notify when brand new movie is added ---
       const sorted = [...movies].sort((a, b) => {
         const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const db_ = b.createdAt ? new Date(b.createdAt).getTime() : 0;

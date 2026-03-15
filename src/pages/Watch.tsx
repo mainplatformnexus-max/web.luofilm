@@ -23,6 +23,7 @@ import { getPlaybackUrl } from "@/lib/offlinePlayerUtils";
 import { autoCacheService } from "@/lib/autoCacheService";
 import { networkDetection } from "@/lib/networkDetection";
 import { trackWatchedMovie } from "@/hooks/useNotifications";
+import { showDeviceNotification } from "@/lib/pushNotifications";
 
 // ==================== SPORT WATCH ====================
 const SportWatch = () => {
@@ -421,6 +422,23 @@ const Watch = () => {
     if (drama?.image && drama.firebaseId) {
       trackWatchedMovie(drama.image, drama.firebaseId);
     }
+  }, [drama?.firebaseId]);
+
+  // Push device notification after 3 minutes of watching
+  useEffect(() => {
+    if (!drama) return;
+    const title = drama.title;
+    const poster = drama.image;
+    const timer = setTimeout(() => {
+      showDeviceNotification(
+        `Enjoying "${title}"?`,
+        'More great movies in Luo translation are waiting for you on LUO FILM!',
+        poster || '/logo.png',
+        '/movies',
+        'lf-watch-promo'
+      ).catch(() => {});
+    }, 3 * 60 * 1000);
+    return () => clearTimeout(timer);
   }, [drama?.firebaseId]);
 
   // Dynamic SEO implementation - Update meta tags on mount and when content changes
