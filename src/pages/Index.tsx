@@ -468,49 +468,49 @@ const Index = () => {
 
       {/* ── FULL FOOTER ─────────────────────────────────────── */}
       <footer className="mt-16 border-t border-border/40 bg-background/80 pb-24 lg:pb-0">
-        <div className="max-w-screen-xl mx-auto px-4 md:px-6 pt-10 pb-6">
-          {/* Top grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-8">
+        <div className="max-w-screen-xl mx-auto px-2 md:px-6 pt-6 md:pt-10 pb-4 md:pb-6">
+          {/* Top grid — always 4 cols */}
+          <div className="grid grid-cols-4 gap-2 md:gap-8 mb-6 md:mb-8">
 
             {/* Brand */}
-            <div className="col-span-1 sm:col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg font-extrabold text-primary tracking-tight">LUO FILM</span>
+            <div>
+              <div className="flex items-center gap-1 mb-2">
+                <span className="text-[10px] md:text-lg font-extrabold text-primary tracking-tight">LUO FILM</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                The #1 platform for Luo-translated movies, series, live TV &amp; sports. Available on web and mobile.
+              <p className="text-[8px] md:text-xs text-muted-foreground leading-relaxed mb-2 md:mb-4">
+                #1 Luo movies, series, live TV &amp; sports.
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 md:gap-2">
                 <a href="https://facebook.com/luofilm" target="_blank" rel="noreferrer"
-                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
-                  <Facebook className="w-3.5 h-3.5" />
+                  className="w-5 h-5 md:w-7 md:h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Facebook className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
                 </a>
                 <a href="https://twitter.com/luofilm" target="_blank" rel="noreferrer"
-                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
-                  <Twitter className="w-3.5 h-3.5" />
+                  className="w-5 h-5 md:w-7 md:h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Twitter className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
                 </a>
                 <a href="https://youtube.com/@luofilm" target="_blank" rel="noreferrer"
-                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
-                  <Youtube className="w-3.5 h-3.5" />
+                  className="w-5 h-5 md:w-7 md:h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Youtube className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
                 </a>
                 <a href="https://instagram.com/luofilm" target="_blank" rel="noreferrer"
-                  className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
-                  <Instagram className="w-3.5 h-3.5" />
+                  className="w-5 h-5 md:w-7 md:h-7 rounded-full bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                  <Instagram className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
                 </a>
               </div>
             </div>
 
             {/* Quick Links */}
             <div>
-              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Quick Links</h4>
-              <ul className="space-y-2 text-xs text-muted-foreground">
+              <h4 className="text-[8px] md:text-xs font-bold text-foreground uppercase tracking-wider mb-2 md:mb-3">Links</h4>
+              <ul className="space-y-1 md:space-y-2 text-[8px] md:text-xs text-muted-foreground">
                 {[
                   { label: "Home", href: "/" },
                   { label: "Movies", href: "/movies" },
                   { label: "Series", href: "/series" },
-                  { label: "TV Channel", href: "/tv" },
-                  { label: "Live Sport", href: "/sports" },
-                  { label: "Download App", href: "/downloads" },
+                  { label: "TV", href: "/tv" },
+                  { label: "Sport", href: "/sports" },
+                  { label: "Downloads", href: "/downloads" },
                 ].map(({ label, href }) => (
                   <li key={href}>
                     <a href={href} className="hover:text-primary transition-colors">→ {label}</a>
@@ -521,14 +521,14 @@ const Index = () => {
 
             {/* Legal */}
             <div>
-              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Legal &amp; Help</h4>
-              <ul className="space-y-2 text-xs text-muted-foreground">
+              <h4 className="text-[8px] md:text-xs font-bold text-foreground uppercase tracking-wider mb-2 md:mb-3">Legal</h4>
+              <ul className="space-y-1 md:space-y-2 text-[8px] md:text-xs text-muted-foreground">
                 {[
-                  { label: "Privacy Policy", href: "/privacy" },
-                  { label: "Terms & Conditions", href: "/terms" },
-                  { label: "How to Use / Guide", href: "/how-to-use" },
+                  { label: "Privacy", href: "/privacy" },
+                  { label: "Terms", href: "/terms" },
+                  { label: "Guide", href: "/how-to-use" },
                   { label: "Subscribe", href: "#subscribe" },
-                  { label: "Agent Program", href: "#agent" },
+                  { label: "Agent", href: "#agent" },
                   { label: "Settings", href: "/settings" },
                 ].map(({ label, href }) => (
                   <li key={href}>
@@ -540,40 +540,40 @@ const Index = () => {
 
             {/* Contact */}
             <div>
-              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Contact Us</h4>
-              <ul className="space-y-3 text-xs text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <Mail className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+              <h4 className="text-[8px] md:text-xs font-bold text-foreground uppercase tracking-wider mb-2 md:mb-3">Contact</h4>
+              <ul className="space-y-1.5 md:space-y-3 text-[8px] md:text-xs text-muted-foreground">
+                <li className="flex items-start gap-1">
+                  <Mail className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 shrink-0 mt-0.5 text-primary" />
                   <a href="mailto:support@luofilm.site" className="hover:text-primary transition-colors break-all">support@luofilm.site</a>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Phone className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+                <li className="flex items-start gap-1">
+                  <Phone className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 shrink-0 mt-0.5 text-primary" />
                   <span>+256 700 000 000</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+                <li className="flex items-start gap-1">
+                  <MapPin className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 shrink-0 mt-0.5 text-primary" />
                   <span>Kampala, Uganda</span>
                 </li>
               </ul>
-              <div className="mt-4">
+              <div className="mt-2 md:mt-4">
                 <a
                   href="mailto:support@luofilm.site"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 bg-primary text-primary-foreground text-[7px] md:text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors"
                 >
-                  <Mail className="w-3 h-3" /> Send Message
+                  <Mail className="w-2 h-2 md:w-3 md:h-3" /> Message
                 </a>
               </div>
             </div>
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-border/40 pt-5 flex flex-col items-center sm:flex-row sm:justify-between gap-2 text-[10px] text-muted-foreground text-center">
+          <div className="border-t border-border/40 pt-3 md:pt-5 flex flex-col sm:flex-row items-center sm:justify-between gap-1 md:gap-2 text-[7px] md:text-[10px] text-muted-foreground text-center">
             <p>© {new Date().getFullYear()} LUO FILM · <a href="https://luofilm.site" className="hover:text-primary">luofilm.site</a> · All rights reserved.</p>
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-              <a href="/privacy" className="hover:text-primary underline underline-offset-2 transition-colors">Privacy Policy</a>
-              <span className="hidden sm:inline">·</span>
-              <a href="/terms" className="hover:text-primary underline underline-offset-2 transition-colors">Terms</a>
-              <span className="hidden sm:inline">·</span>
+            <div className="flex items-center gap-2">
+              <a href="/privacy" className="hover:text-primary transition-colors">Privacy</a>
+              <span>·</span>
+              <a href="/terms" className="hover:text-primary transition-colors">Terms</a>
+              <span>·</span>
               <a href="/how-to-use" className="hover:text-primary transition-colors">Help</a>
             </div>
           </div>
