@@ -1013,6 +1013,7 @@ const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserIt
           <thead><tr className="border-b border-border bg-secondary/50">
             <th className="text-left p-3 text-muted-foreground font-medium">Name</th>
             <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Phone</th>
+            <th className="text-left p-3 text-muted-foreground font-medium hidden lg:table-cell">Country / Currency</th>
             <th className="text-center p-3 text-muted-foreground font-medium">Status</th>
             <th className="text-center p-3 text-muted-foreground font-medium hidden sm:table-cell">Subscription</th>
             <th className="text-right p-3 text-muted-foreground font-medium">Actions</th>
@@ -1022,10 +1023,23 @@ const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserIt
               <tr key={u.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
                 <td className="p-3 font-medium text-foreground">{u.name}</td>
                 <td className="p-3 text-muted-foreground hidden md:table-cell">{u.phone}</td>
+                <td className="p-3 hidden lg:table-cell">
+                  {u.country ? (
+                    <div className="text-[10px]">
+                      <span className="text-foreground font-medium">{u.country}</span>
+                      {u.currency && (
+                        <span className="ml-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[9px] font-mono">
+                          {u.currencySymbol || ""}{u.currency}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-[10px]">—</span>
+                  )}
+                </td>
                 <td className="p-3 text-center">
                   <Badge className={`text-[9px] border-0 ${u.status === "active" ? "bg-primary/20 text-primary" : u.status === "blocked" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>{u.status}</Badge>
                 </td>
-                <td className="p-3 text-center hidden sm:table-cell text-[10px]">{u.subscription || <span className="text-muted-foreground">None</span>}</td>
                 <td className="p-3 text-center hidden sm:table-cell text-[10px]">
                   <div className="text-[10px]">
                     {u.subscriptionExpiry && new Date(u.subscriptionExpiry).getTime() > Date.now() ? (
@@ -1050,7 +1064,7 @@ const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserIt
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground text-xs">No users yet.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">No users yet.</td></tr>}
           </tbody>
         </table>
       </div>

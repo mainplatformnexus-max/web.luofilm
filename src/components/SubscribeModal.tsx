@@ -7,6 +7,7 @@ import {
 } from "@/lib/fincraPayment";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { detectGeo, getCurrencySymbol } from "@/lib/geoDetect";
 
 interface SubscribeModalProps {
   open: boolean;
@@ -32,12 +33,25 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
   const [step, setStep] = useState<"plan" | "loading" | "checkout">("plan");
   const [checkoutUrl, setCheckoutUrl] = useState<string>("");
   const [userDoc, setUserDoc] = useState<any>(null);
+  const [currency, setCurrency] = useState("NGN");
+  const [currencySymbol, setCurrencySymbol] = useState("₦");
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      getUserByUid(user.uid).then(doc => setUserDoc(doc));
+      getUserByUid(user.uid).then(doc => {
+        setUserDoc(doc);
+        if (doc?.currency) {
+          setCurrency(doc.currency);
+          setCurrencySymbol(doc.currencySymbol || getCurrencySymbol(doc.currency));
+        } else {
+          detectGeo().then(geo => {
+            setCurrency(geo.currency);
+            setCurrencySymbol(geo.currencySymbol);
+          });
+        }
+      });
     }
   }, [user]);
 
@@ -98,7 +112,7 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
 
       const session = await createCheckoutSession({
         amount: planInfo.priceNum,
-        currency: "NGN",
+        currency,
         customerName: user.displayName || user.email || "Customer",
         customerEmail: user.email || "",
         redirectUrl,
@@ -234,8 +248,8 @@ const SubscribeModal = ({ open, onClose, mode = "user" }: SubscribeModalProps) =
                 </div>
                 <div className="text-right flex items-center gap-2">
                   <div>
-                    <p className="text-primary text-sm font-bold">₦{plan.price}</p>
-                    <p className="text-muted-foreground text-[10px]">NGN</p>
+                    <p className="text-primary text-sm font-bold">{currencySymbol || currency}{plan.price}</p>
+                    <p className="text-muted-foreground text-[10px]">{currency}</p>
                   </div>
                   {selectedPlan === plan.id && (
                     <CheckCircle className="w-4 h-4 text-primary" />

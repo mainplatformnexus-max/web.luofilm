@@ -17,7 +17,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, phone: string) => Promise<void>;
+  register: (email: string, password: string, name: string, phone: string, country?: string, countryCode?: string, currency?: string, currencySymbol?: string) => Promise<void>;
   loginWithGoogle: () => Promise<{ isNewUser: boolean }>;
   logout: () => Promise<void>;
   // Agent context
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const register = async (email: string, password: string, name: string, phone: string) => {
+  const register = async (email: string, password: string, name: string, phone: string, country?: string, countryCode?: string, currency?: string, currencySymbol?: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
     await addUser({
@@ -67,6 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       lastActive: new Date().toISOString().split("T")[0],
       createdAt: new Date().toISOString().split("T")[0],
       uid: cred.user.uid,
+      ...(country ? { country } : {}),
+      ...(countryCode ? { countryCode } : {}),
+      ...(currency ? { currency } : {}),
+      ...(currencySymbol ? { currencySymbol } : {}),
     } as any);
   };
 

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, Phone, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { X, Phone, Mail, Lock, User, Eye, EyeOff, Globe, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getUserByPhone } from "@/lib/firebaseServices";
+import { detectGeo, SORTED_COUNTRIES } from "@/lib/geoDetect";
 import logo from "@/assets/logo.png";
 
 interface LoginModalProps {
@@ -22,11 +23,29 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState("NG");
+  const [countryName, setCountryName] = useState("Nigeria");
+  const [currency, setCurrency] = useState("NGN");
+  const [currencySymbol, setCurrencySymbol] = useState("₦");
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [geoDetected, setGeoDetected] = useState(false);
+
+  useEffect(() => {
+    if (open && (mode === "register" || mode === "ask-email") && !geoDetected) {
+      detectGeo().then(geo => {
+        setCountryCode(geo.countryCode);
+        setCountryName(geo.countryName);
+        setCurrency(geo.currency);
+        setCurrencySymbol(geo.currencySymbol);
+        setGeoDetected(true);
+      });
+    }
+  }, [open, mode, geoDetected]);
 
   useEffect(() => {
     const handleOpenLogin = () => {
       if (!open) {
-        // Find and click the login button in the header
         const loginButtons = document.querySelectorAll('button');
         for (const btn of Array.from(loginButtons)) {
           if (btn.textContent?.toLowerCase().includes('login')) {
@@ -42,9 +61,29 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
 
   if (!open) return null;
 
+  const handleSelectCountry = (code: string) => {
+    const info = SORTED_COUNTRIES.find(c => c.code === code);
+    if (info) {
+      setCountryCode(info.code);
+      setCountryName(info.name);
+      setCurrency(info.currency);
+      setCurrencySymbol(info.symbol);
+    }
+    setShowCountryDropdown(false);
+    setCountrySearch("");
+  };
+
+  const filteredCountries = SORTED_COUNTRIES.filter(c =>
+    c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    c.currency.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    c.code.toLowerCase().includes(countrySearch.toLowerCase())
+  );
+
   const resetForm = () => {
     setPhone(""); setPassword(""); setName(""); setEmail("");
     setMode("login");
+    setShowCountryDropdown(false);
+    setCountrySearch("");
   };
 
   const handleClose = () => { resetForm(); onClose(); };
@@ -54,20 +93,16 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     if (!phone || !password) return;
     setLoading(true);
     try {
-      // Check if user exists by phone
       const existing = await getUserByPhone(phone);
       if (!existing) {
-        // Phone not registered → ask for email to register
         setMode("ask-email");
         setLoading(false);
         return;
       }
-      // Login with their registered email
       await login(existing.email, password);
       toast({ title: "Welcome back!", description: "You are now logged in." });
       handleClose();
     } catch (err: any) {
-      // Handle Google-linked accounts trying password login
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
         toast({
           title: "Login Failed",
@@ -89,14 +124,13 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     if (!email || !name) return;
     setLoading(true);
     try {
-      // Check phone not already used by another account
       const existing = await getUserByPhone(phone);
       if (existing) {
         toast({ title: "Phone already registered", description: "This phone number is linked to another account.", variant: "destructive" });
         setLoading(false);
         return;
       }
-      await register(email, password, name, phone);
+      await register(email, password, name, phone, countryName, countryCode, currency, currencySymbol);
       toast({ title: "Account created!", description: "Welcome to iQIYI." });
       handleClose();
     } catch (err: any) {
@@ -111,7 +145,6 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     if (!phone || !password || !name || !email) return;
     setLoading(true);
     try {
-      // Ensure phone is unique
       const existing = await getUserByPhone(phone);
       if (existing) {
         toast({ title: "Phone already registered", description: "This phone number is already linked to an account. Please log in instead.", variant: "destructive" });
@@ -119,7 +152,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
         setLoading(false);
         return;
       }
-      await register(email, password, name, phone);
+      await register(email, password, name, phone, countryName, countryCode, currency, currencySymbol);
       toast({ title: "Account created!", description: "Welcome to iQIYI." });
       handleClose();
     } catch (err: any) {
@@ -145,6 +178,54 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
       setLoading(false);
     }
   };
+
+  const CountrySelector = () => (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+        className="w-full h-10 pl-10 pr-3 rounded-lg bg-secondary border border-border text-foreground text-sm text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary/50"
+      >
+        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <span className="flex items-center gap-1.5 flex-1 min-w-0">
+          <span className="truncate">{countryName}</span>
+          <span className="text-muted-foreground text-[10px] shrink-0">({currency})</span>
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform shrink-0 ${showCountryDropdown ? "rotate-180" : ""}`} />
+      </button>
+
+      {showCountryDropdown && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="p-2 border-b border-border">
+            <input
+              type="text"
+              placeholder="Search country or currency..."
+              value={countrySearch}
+              onChange={e => setCountrySearch(e.target.value)}
+              autoFocus
+              className="w-full h-8 px-3 rounded-md bg-secondary border border-border text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          </div>
+          <div className="max-h-44 overflow-y-auto">
+            {filteredCountries.slice(0, 80).map(c => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => handleSelectCountry(c.code)}
+                className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-secondary transition-colors ${countryCode === c.code ? "bg-primary/10 text-primary" : "text-foreground"}`}
+              >
+                <span>{c.name}</span>
+                <span className="text-muted-foreground text-[10px]">{c.currency} {c.symbol}</span>
+              </button>
+            ))}
+            {filteredCountries.length === 0 && (
+              <p className="px-3 py-3 text-muted-foreground text-xs text-center">No countries found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
@@ -204,6 +285,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
               <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required
                 className="w-full h-10 pl-10 pr-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
             </div>
+            <CountrySelector />
             <button type="submit" disabled={loading}
               className="w-full h-10 bg-primary text-primary-foreground font-semibold text-sm rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50">
               {loading ? "Creating account..." : "Create Account & Sign In"}
@@ -238,6 +320,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <CountrySelector />
             <button type="submit" disabled={loading}
               className="w-full h-10 bg-primary text-primary-foreground font-semibold text-sm rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50">
               {loading ? "Please wait..." : "Create Account"}
@@ -260,7 +343,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
                 Continue with Google
               </button>

@@ -150,6 +150,10 @@ export interface UserItem {
   subscriptionExpiry: string | null;
   lastActive: string;
   createdAt: string;
+  country?: string;
+  countryCode?: string;
+  currency?: string;
+  currencySymbol?: string;
 }
 
 export interface WalletTransaction {
