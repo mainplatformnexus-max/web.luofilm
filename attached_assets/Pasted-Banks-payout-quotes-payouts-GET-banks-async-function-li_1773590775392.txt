@@ -1,0 +1,127 @@
+Banks / payout quotes / payouts
+GET /banks
+async function listBanks() {
+  const res = await fetch("https://function-bun-production-4110.up.railway.app/banks");
+  const data = await res.json();
+  console.log("LIST BANKS:", data);
+  return data;
+}
+POST /payouts/quote
+async function generatePayoutQuote() {
+  const res = await fetch("https://function-bun-production-4110.up.railway.app/payouts/quote", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sourceCurrency: "USD",
+      destinationCurrency: "NGN",
+      amount: 100,
+      paymentDestination: "bank_account"
+    })
+  });
+
+  const data = await res.json();
+  console.log("PAYOUT QUOTE:", data);
+  return data;
+}
+POST /payouts/bank
+async function createBankPayout() {
+  const res = await fetch("https://function-bun-production-4110.up.railway.app/payouts/bank", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sourceCurrency: "NGN",
+      destinationCurrency: "NGN",
+      amount: 1000,
+      description: "Vendor payout",
+      customerReference: "payout-1001",
+      paymentScheme: "NIP",
+      beneficiary: {
+        name: "Jane Doe",
+        accountNumber: "0123456789",
+        bankCode: "044",
+        email: "jane@example.com",
+        phoneNumber: "08012345678",
+        country: "NG"
+      }
+    })
+  });
+
+  const data = await res.json();
+  console.log("BANK PAYOUT:", data);
+  return data;
+}
+POST /payouts/mobile-money
+async function createMobileMoneyPayout() {
+  const res = await fetch("https://function-bun-production-4110.up.railway.app/payouts/mobile-money", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sourceCurrency: "KES",
+      destinationCurrency: "KES",
+      amount: 500,
+      description: "Wallet withdrawal",
+      customerReference: "momo-payout-1001",
+      beneficiary: {
+        name: "Jane Doe",
+        mobileNumber: "254700000000",
+        mobileMoneyCode: "MPESA",
+        email: "jane@example.com",
+        country: "KE"
+      }
+    })
+  });
+
+  const data = await res.json();
+  console.log("MOBILE MONEY PAYOUT:", data);
+  return data;
+}
+POST /payouts/fincra-wallet
+async function createFincraWalletPayout() {
+  const res = await fetch("https://function-bun-production-4110.up.railway.app/payouts/fincra-wallet", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      sourceCurrency: "NGN",
+      destinationCurrency: "NGN",
+      amount: 1000,
+      description: "Wallet to wallet transfer",
+      customerReference: "wallet-payout-1001",
+      beneficiary: {
+        walletId: "wallet_id_here"
+      }
+    })
+  });
+
+  const data = await res.json();
+  console.log("FINCRA WALLET PAYOUT:", data);
+  return data;
+}
+GET /payouts
+async function listPayouts() {
+  const res = await fetch("https://function-bun-production-4110.up.railway.app/payouts");
+  const data = await res.json();
+  console.log("LIST PAYOUTS:", data);
+  return data;
+}
+GET /payouts/reference/:reference
+async function getPayoutByReference(reference) {
+  const res = await fetch(`https://function-bun-production-4110.up.railway.app/payouts/reference/${encodeURIComponent(reference)}`);
+  const data = await res.json();
+  console.log("GET PAYOUT BY REFERENCE:", data);
+  return data;
+}
+GET /payouts/customer-reference/:customerReference
+async function getPayoutByCustomerReference(customerReference) {
+  const res = await fetch(`https://function-bun-production-4110.up.railway.app/payouts/customer-reference/${encodeURIComponent(customerReference)}`);
+  const data = await res.json();
+  console.log("GET PAYOUT BY CUSTOMER REFERENCE:", data);
+  return data;
+}

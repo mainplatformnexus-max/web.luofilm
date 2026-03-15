@@ -1138,27 +1138,155 @@ const UsersSection = ({ users, usersWithoutPhone = [], search }: { users: UserIt
 };
 
 // ==================== WALLET SECTION ====================
+const API_BASE = "https://function-bun-production-4110.up.railway.app";
+
 const WalletSection = ({ transactions, search }: { transactions: WalletTransaction[]; search: string }) => {
-  const filtered = transactions.filter(t => t.userName.toLowerCase().includes(search.toLowerCase()) || t.type.includes(search.toLowerCase()));
   const { toast } = useToast();
-  const [livraBalance, setLivraBalance] = useState(0);
-  const [livraTransactions, setLivraTransactions] = useState<any[]>([]);
-  const [loadingBalance, setLoadingBalance] = useState(true);
+  const [walletTab, setWalletTab] = useState<"overview" | "logs" | "statement" | "transactions">("overview");
+
+  // Wallets
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [loadingWallets, setLoadingWallets] = useState(true);
+  const [selectedWalletId, setSelectedWalletId] = useState<string>("");
+
+  // Logs
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsPage, setLogsPage] = useState(1);
+
+  // Statement
+  const [statement, setStatement] = useState<any[]>([]);
+  const [loadingStatement, setLoadingStatement] = useState(false);
+  const startOfMonth = new Date(); startOfMonth.setDate(1);
+  const [stmtStart, setStmtStart] = useState(startOfMonth.toISOString().split("T")[0]);
+  const [stmtEnd, setStmtEnd] = useState(new Date().toISOString().split("T")[0]);
+
+  // Withdraw modal
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [withdrawType, setWithdrawType] = useState<"mobile_money" | "bank">("mobile_money");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawNumber, setWithdrawNumber] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [withdrawCurrency, setWithdrawCurrency] = useState("UGX");
+  const [withdrawName, setWithdrawName] = useState("");
+  const [withdrawPhone, setWithdrawPhone] = useState("");
+  const [withdrawEmail, setWithdrawEmail] = useState("");
+  const [withdrawAccount, setWithdrawAccount] = useState("");
+  const [withdrawBankCode, setWithdrawBankCode] = useState("");
+  const [withdrawMomoCode, setWithdrawMomoCode] = useState("MTN");
+  const [withdrawCountry, setWithdrawCountry] = useState("UG");
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
-  // Wallet balance — Livra removed; Fincra does not expose a real-time balance API
-  useEffect(() => {
-    setLoadingBalance(false);
-  }, []);
-
-  const handleAdminWithdraw = async () => {
-    toast({ title: "Not Available", description: "Admin withdrawals via the old payment provider are no longer supported.", variant: "destructive" });
+  const fetchWallets = async () => {
+    setLoadingWallets(true);
+    try {
+      const res = await fetch(`${API_BASE}/wallets`);
+      const data = await res.json();
+      const list: any[] = Array.isArray(data) ? data : (data?.data || data?.wallets || []);
+      setWallets(list);
+      if (list.length > 0 && !selectedWalletId) setSelectedWalletId(list[0]?.id || list[0]?._id || "");
+    } catch { }
+    setLoadingWallets(false);
   };
 
-  const totalFirestoreBalance = transactions.filter(t => t.status === "completed").reduce((sum, t) => t.type === "withdrawal" ? sum - t.amount : sum + t.amount, 0);
+  const fetchLogs = async (walletId: string, page: number) => {
+    if (!walletId) return;
+    setLoadingLogs(true);
+    try {
+      const url = `${API_BASE}/wallets/logs?walletId=${encodeURIComponent(walletId)}&page=${page}&size=20`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const list: any[] = Array.isArray(data) ? data : (data?.data || data?.logs || []);
+      setLogs(list);
+    } catch { }
+    setLoadingLogs(false);
+  };
+
+  const fetchStatement = async () => {
+    if (!selectedWalletId) return;
+    setLoadingStatement(true);
+    try {
+      const url = `${API_BASE}/wallets/statement?walletId=${encodeURIComponent(selectedWalletId)}&startDate=${encodeURIComponent(stmtStart)}&endDate=${encodeURIComponent(stmtEnd)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const list: any[] = Array.isArray(data) ? data : (data?.data || data?.statement || []);
+      setStatement(list);
+    } catch { }
+    setLoadingStatement(false);
+  };
+
+  useEffect(() => { fetchWallets(); }, []);
+
+  useEffect(() => {
+    if (walletTab === "logs" && selectedWalletId) fetchLogs(selectedWalletId, logsPage);
+  }, [walletTab, selectedWalletId, logsPage]);
+
+  useEffect(() => {
+    if (walletTab === "statement" && selectedWalletId) fetchStatement();
+  }, [walletTab, selectedWalletId]);
+
+  const handleWithdraw = async () => {
+    if (!withdrawAmount || !withdrawName) return;
+    setIsWithdrawing(true);
+    try {
+      const ref = `withdraw-${Date.now()}`;
+      const selectedWallet = wallets.find(w => (w.id || w._id) === selectedWalletId);
+      const currency = selectedWallet?.currency || withdrawCurrency;
+      let endpoint = "";
+      let body: any = {};
+
+      if (withdrawType === "mobile_money") {
+        endpoint = `${API_BASE}/payouts/mobile-money`;
+        body = {
+          sourceCurrency: currency,
+          destinationCurrency: currency,
+          amount: parseFloat(withdrawAmount),
+          description: "Admin wallet withdrawal",
+          customerReference: ref,
+          beneficiary: {
+            name: withdrawName,
+            mobileNumber: withdrawPhone,
+            mobileMoneyCode: withdrawMomoCode,
+            email: withdrawEmail || "admin@luofilm.com",
+            country: withdrawCountry,
+          },
+        };
+      } else {
+        endpoint = `${API_BASE}/payouts/bank`;
+        body = {
+          sourceCurrency: currency,
+          destinationCurrency: currency,
+          amount: parseFloat(withdrawAmount),
+          description: "Admin wallet withdrawal",
+          customerReference: ref,
+          paymentScheme: "NIP",
+          beneficiary: {
+            name: withdrawName,
+            accountNumber: withdrawAccount,
+            bankCode: withdrawBankCode,
+            email: withdrawEmail || "admin@luofilm.com",
+            phoneNumber: withdrawPhone,
+            country: withdrawCountry,
+          },
+        };
+      }
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+      if (result.ok || result.success || result.status === "success") {
+        toast({ title: "Withdrawal initiated", description: `Reference: ${ref}` });
+        setShowWithdraw(false);
+        fetchWallets();
+      } else {
+        toast({ title: "Withdrawal failed", description: result.message || "Check details and try again.", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setIsWithdrawing(false);
+  };
 
   const deleteFailed = async () => {
     const failed = transactions.filter(t => t.status === "failed");
@@ -1166,97 +1294,332 @@ const WalletSection = ({ transactions, search }: { transactions: WalletTransacti
     toast({ title: "Failed transactions cleared" });
   };
 
+  const totalFirestoreBalance = transactions.filter(t => t.status === "completed").reduce((sum, t) => t.type === "withdrawal" ? sum - t.amount : sum + t.amount, 0);
+
+  const filteredTx = transactions.filter(t => t.userName.toLowerCase().includes(search.toLowerCase()) || t.type.includes(search.toLowerCase()));
+
+  const walletTabs = [
+    { key: "overview", label: "Wallets" },
+    { key: "logs", label: "Logs" },
+    { key: "statement", label: "Statement" },
+    { key: "transactions", label: "Firestore Transactions" },
+  ];
+
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Livra Wallet Balance</p>
-          {loadingBalance ? (
-            <Loader2 className="w-5 h-5 text-primary animate-spin" />
-          ) : (
-            <p className="text-xl font-bold text-primary">{livraBalance.toLocaleString()} UGX</p>
-          )}
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Firestore Balance</p>
-          <p className="text-xl font-bold text-foreground">{totalFirestoreBalance.toLocaleString()} UGX</p>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total Transactions</p>
-          <p className="text-xl font-bold text-foreground">{transactions.length}</p>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Admin Actions</p>
-            <div className="flex gap-1.5 mt-1">
-              <Button size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowWithdraw(true)}>
-                <ArrowDownToLine className="w-3 h-3" /> Withdraw
-              </Button>
-              <Button size="sm" variant="destructive" className="h-7 text-[10px]" onClick={deleteFailed}>
-                <Trash2 className="w-3 h-3 mr-1" /> Clear Failed
-              </Button>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-wrap gap-2 mb-5 border-b border-border pb-4">
+        {walletTabs.map(t => (
+          <button key={t.key} onClick={() => setWalletTab(t.key as any)}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${walletTab === t.key ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+            {t.label}
+          </button>
+        ))}
+        <button onClick={fetchWallets} className="ml-auto p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground" title="Refresh wallets">
+          <RefreshCw className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      {/* Admin withdraw modal */}
-      {showWithdraw && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowWithdraw(false)}>
-          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-bold text-foreground mb-3">Admin Withdraw</h3>
-            <p className="text-muted-foreground text-[10px] mb-4">Livra Balance: <span className="text-primary font-bold">UGX {livraBalance.toLocaleString()}</span></p>
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="text-muted-foreground text-[10px] block mb-1">Amount (UGX)</label>
-                <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} placeholder="Amount"
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-              </div>
-              <div>
-                <label className="text-muted-foreground text-[10px] block mb-1">Mobile Money Number</label>
-                <input type="tel" value={withdrawNumber} onChange={e => setWithdrawNumber(e.target.value)} placeholder="e.g. 0771234567"
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+      {/* ── OVERVIEW ── */}
+      {walletTab === "overview" && (
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+            <div className="bg-card border border-border rounded-xl p-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Firestore Balance</p>
+              <p className="text-xl font-bold text-foreground">{totalFirestoreBalance.toLocaleString()}</p>
+            </div>
+            <div className="bg-card border border-border rounded-xl p-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total Transactions</p>
+              <p className="text-xl font-bold text-foreground">{transactions.length}</p>
+            </div>
+            <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+              <div className="flex-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Admin Actions</p>
+                <div className="flex gap-1.5">
+                  <Button size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowWithdraw(true)}>
+                    <ArrowDownToLine className="w-3 h-3" /> Withdraw
+                  </Button>
+                  <Button size="sm" variant="destructive" className="h-7 text-[10px]" onClick={deleteFailed}>
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear Failed
+                  </Button>
+                </div>
               </div>
             </div>
+          </div>
+
+          {loadingWallets ? (
+            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>
+          ) : wallets.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground text-xs">No wallets found from payment provider.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {wallets.map((w: any, i: number) => {
+                const wId = w.id || w._id || i;
+                const currency = w.currency || w.currencyCode || "—";
+                const balance = w.balance ?? w.availableBalance ?? w.amount ?? "—";
+                const label = w.name || w.label || currency;
+                return (
+                  <div key={wId} onClick={() => setSelectedWalletId(String(wId))}
+                    className={`bg-card border rounded-xl p-4 cursor-pointer transition-all ${String(selectedWalletId) === String(wId) ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/40"}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">{currency}</span>
+                      <Badge className="text-[9px] border-0 bg-primary/15 text-primary">{w.status || "active"}</Badge>
+                    </div>
+                    <p className="text-xl font-bold text-foreground">{typeof balance === "number" ? balance.toLocaleString() : balance}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{label}</p>
+                    {w.ledgerBalance !== undefined && (
+                      <p className="text-[10px] text-muted-foreground mt-1">Ledger: {w.ledgerBalance.toLocaleString()}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── LOGS ── */}
+      {walletTab === "logs" && (
+        <div>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <select className="h-8 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={selectedWalletId} onChange={e => { setSelectedWalletId(e.target.value); setLogsPage(1); }}>
+              <option value="">— Select Wallet —</option>
+              {wallets.map((w: any, i: number) => <option key={w.id || w._id || i} value={w.id || w._id}>{w.name || w.currency || w.id}</option>)}
+            </select>
+            <Button size="sm" className="h-8 text-xs gap-1" onClick={() => fetchLogs(selectedWalletId, logsPage)} disabled={!selectedWalletId || loadingLogs}>
+              <RefreshCw className={`w-3 h-3 ${loadingLogs ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+            <div className="flex items-center gap-1 ml-auto">
+              <button disabled={logsPage <= 1} onClick={() => setLogsPage(p => p - 1)} className="p-1 rounded hover:bg-secondary disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-xs text-muted-foreground">Page {logsPage}</span>
+              <button onClick={() => setLogsPage(p => p + 1)} className="p-1 rounded hover:bg-secondary"><ChevronRight className="w-4 h-4" /></button>
+            </div>
+          </div>
+          {loadingLogs ? (
+            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>
+          ) : (
+            <div className="bg-card border border-border rounded-xl overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead><tr className="border-b border-border bg-secondary/50">
+                  <th className="text-left p-3 text-muted-foreground font-medium">Type</th>
+                  <th className="text-left p-3 text-muted-foreground font-medium">Description</th>
+                  <th className="text-center p-3 text-muted-foreground font-medium">Amount</th>
+                  <th className="text-center p-3 text-muted-foreground font-medium">Balance After</th>
+                  <th className="text-center p-3 text-muted-foreground font-medium">Status</th>
+                  <th className="text-left p-3 text-muted-foreground font-medium">Date</th>
+                </tr></thead>
+                <tbody>
+                  {logs.map((l: any, i: number) => (
+                    <tr key={l.id || l._id || i} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                      <td className="p-3"><Badge variant="outline" className="text-[9px] capitalize">{l.type || l.transactionType || "—"}</Badge></td>
+                      <td className="p-3 text-muted-foreground max-w-xs truncate">{l.description || l.narration || "—"}</td>
+                      <td className="p-3 text-center font-bold">
+                        <span className={(l.type || "").toLowerCase().includes("debit") || (l.direction || "") === "debit" ? "text-destructive" : "text-primary"}>
+                          {typeof l.amount === "number" ? l.amount.toLocaleString() : l.amount || "—"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center text-foreground">{l.balanceAfter !== undefined ? Number(l.balanceAfter).toLocaleString() : "—"}</td>
+                      <td className="p-3 text-center">
+                        <Badge className={`text-[9px] border-0 ${(l.status || "").toLowerCase() === "successful" || (l.status || "").toLowerCase() === "completed" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{l.status || "—"}</Badge>
+                      </td>
+                      <td className="p-3 text-muted-foreground text-[10px]">{l.createdAt || l.date || l.timestamp || "—"}</td>
+                    </tr>
+                  ))}
+                  {logs.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">No logs found. Select a wallet and refresh.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── STATEMENT ── */}
+      {walletTab === "statement" && (
+        <div>
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="text-[10px] text-muted-foreground block mb-1">Wallet</label>
+              <select className="h-8 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={selectedWalletId} onChange={e => setSelectedWalletId(e.target.value)}>
+                <option value="">— Select Wallet —</option>
+                {wallets.map((w: any, i: number) => <option key={w.id || w._id || i} value={w.id || w._id}>{w.name || w.currency || w.id}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground block mb-1">From</label>
+              <input type="date" value={stmtStart} onChange={e => setStmtStart(e.target.value)} className="h-8 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground block mb-1">To</label>
+              <input type="date" value={stmtEnd} onChange={e => setStmtEnd(e.target.value)} className="h-8 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" />
+            </div>
+            <Button size="sm" className="h-8 text-xs gap-1" onClick={fetchStatement} disabled={!selectedWalletId || loadingStatement}>
+              <Download className={`w-3 h-3 ${loadingStatement ? "animate-spin" : ""}`} /> Fetch Statement
+            </Button>
+          </div>
+          {loadingStatement ? (
+            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>
+          ) : (
+            <div className="bg-card border border-border rounded-xl overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead><tr className="border-b border-border bg-secondary/50">
+                  <th className="text-left p-3 text-muted-foreground font-medium">Type</th>
+                  <th className="text-left p-3 text-muted-foreground font-medium">Description</th>
+                  <th className="text-center p-3 text-muted-foreground font-medium">Amount</th>
+                  <th className="text-center p-3 text-muted-foreground font-medium">Currency</th>
+                  <th className="text-center p-3 text-muted-foreground font-medium">Status</th>
+                  <th className="text-left p-3 text-muted-foreground font-medium">Date</th>
+                </tr></thead>
+                <tbody>
+                  {statement.map((s: any, i: number) => (
+                    <tr key={s.id || s._id || i} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                      <td className="p-3"><Badge variant="outline" className="text-[9px] capitalize">{s.type || s.transactionType || "—"}</Badge></td>
+                      <td className="p-3 text-muted-foreground max-w-xs truncate">{s.description || s.narration || "—"}</td>
+                      <td className="p-3 text-center font-bold">
+                        <span className={(s.type || "").toLowerCase().includes("debit") ? "text-destructive" : "text-primary"}>
+                          {typeof s.amount === "number" ? s.amount.toLocaleString() : s.amount || "—"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center font-mono text-[10px]">{s.currency || "—"}</td>
+                      <td className="p-3 text-center">
+                        <Badge className={`text-[9px] border-0 ${(s.status || "").toLowerCase() === "successful" || (s.status || "").toLowerCase() === "completed" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{s.status || "—"}</Badge>
+                      </td>
+                      <td className="p-3 text-muted-foreground text-[10px]">{s.createdAt || s.date || s.timestamp || "—"}</td>
+                    </tr>
+                  ))}
+                  {statement.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">No statement data. Select a wallet and date range, then click Fetch Statement.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── FIRESTORE TRANSACTIONS ── */}
+      {walletTab === "transactions" && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <table className="w-full text-xs">
+            <thead><tr className="border-b border-border bg-secondary/50">
+              <th className="text-left p-3 text-muted-foreground font-medium">User</th>
+              <th className="text-center p-3 text-muted-foreground font-medium">Type</th>
+              <th className="text-center p-3 text-muted-foreground font-medium">Amount</th>
+              <th className="text-center p-3 text-muted-foreground font-medium">Status</th>
+              <th className="text-left p-3 text-muted-foreground font-medium hidden sm:table-cell">Method</th>
+              <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Date</th>
+            </tr></thead>
+            <tbody>
+              {filteredTx.map(t => (
+                <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                  <td className="p-3 font-medium text-foreground">{t.userName}</td>
+                  <td className="p-3 text-center">
+                    <Badge variant="outline" className={`text-[9px] capitalize ${t.type === "subscription" ? "border-primary text-primary" : t.type === "withdrawal" ? "border-accent text-accent" : "border-blue-400 text-blue-400"}`}>{t.type}</Badge>
+                  </td>
+                  <td className="p-3 text-center font-bold">{t.amount.toLocaleString()}</td>
+                  <td className="p-3 text-center">
+                    <Badge className={`text-[9px] border-0 ${t.status === "completed" ? "bg-primary/20 text-primary" : t.status === "failed" ? "bg-destructive/20 text-destructive" : "bg-accent/20 text-accent"}`}>{t.status}</Badge>
+                  </td>
+                  <td className="p-3 text-muted-foreground hidden sm:table-cell text-[10px]">{t.method}</td>
+                  <td className="p-3 text-muted-foreground hidden md:table-cell text-[10px]">{t.createdAt}</td>
+                </tr>
+              ))}
+              {filteredTx.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">No transactions yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── WITHDRAW MODAL ── */}
+      {showWithdraw && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowWithdraw(false)}>
+          <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-bold text-foreground mb-4">Withdraw Funds</h3>
+
+            <div className="space-y-3 mb-5">
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Wallet</label>
+                <select className="w-full h-8 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={selectedWalletId} onChange={e => setSelectedWalletId(e.target.value)}>
+                  <option value="">— Select Wallet —</option>
+                  {wallets.map((w: any, i: number) => <option key={w.id || w._id || i} value={w.id || w._id}>{w.name || w.currency} — {w.currency} {(w.balance ?? w.availableBalance ?? "?").toLocaleString?.() ?? "?"}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Payout Method</label>
+                <select className="w-full h-8 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={withdrawType} onChange={e => setWithdrawType(e.target.value as any)}>
+                  <option value="mobile_money">Mobile Money</option>
+                  <option value="bank">Bank Account</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Amount</label>
+                <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} placeholder="0.00"
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Recipient Name</label>
+                <input type="text" value={withdrawName} onChange={e => setWithdrawName(e.target.value)} placeholder="Full name"
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Email (optional)</label>
+                <input type="email" value={withdrawEmail} onChange={e => setWithdrawEmail(e.target.value)} placeholder="email@example.com"
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Country Code (e.g. UG, KE, NG)</label>
+                <input type="text" value={withdrawCountry} onChange={e => setWithdrawCountry(e.target.value.toUpperCase())} placeholder="UG"
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+
+              {withdrawType === "mobile_money" && (
+                <>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block mb-1">Mobile Number (with country code)</label>
+                    <input type="tel" value={withdrawPhone} onChange={e => setWithdrawPhone(e.target.value)} placeholder="e.g. 256771234567"
+                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block mb-1">Mobile Money Provider</label>
+                    <select className="w-full h-8 rounded-lg border border-border bg-secondary text-foreground text-xs px-3" value={withdrawMomoCode} onChange={e => setWithdrawMomoCode(e.target.value)}>
+                      <option value="MTN">MTN</option>
+                      <option value="AIRTEL">Airtel</option>
+                      <option value="MPESA">M-Pesa</option>
+                      <option value="VODAFONE">Vodafone</option>
+                      <option value="ORANGE">Orange</option>
+                      <option value="WAVE">Wave</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {withdrawType === "bank" && (
+                <>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block mb-1">Account Number</label>
+                    <input type="text" value={withdrawAccount} onChange={e => setWithdrawAccount(e.target.value)} placeholder="Account number"
+                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block mb-1">Bank Code</label>
+                    <input type="text" value={withdrawBankCode} onChange={e => setWithdrawBankCode(e.target.value)} placeholder="e.g. 044"
+                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block mb-1">Phone Number</label>
+                    <input type="tel" value={withdrawPhone} onChange={e => setWithdrawPhone(e.target.value)} placeholder="Phone number"
+                      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-foreground text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => setShowWithdraw(false)}>Cancel</Button>
-              <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleAdminWithdraw} disabled={isProcessing || !withdrawAmount || !withdrawNumber}>
-                {isProcessing ? "Processing..." : "Withdraw"}
+              <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleWithdraw}
+                disabled={isWithdrawing || !withdrawAmount || !withdrawName || !selectedWalletId}>
+                {isWithdrawing ? <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Processing...</> : "Withdraw"}
               </Button>
             </div>
           </div>
         </div>
       )}
-
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-xs">
-          <thead><tr className="border-b border-border bg-secondary/50">
-            <th className="text-left p-3 text-muted-foreground font-medium">User</th>
-            <th className="text-center p-3 text-muted-foreground font-medium">Type</th>
-            <th className="text-center p-3 text-muted-foreground font-medium">Amount</th>
-            <th className="text-center p-3 text-muted-foreground font-medium">Status</th>
-            <th className="text-left p-3 text-muted-foreground font-medium hidden sm:table-cell">Method</th>
-            <th className="text-left p-3 text-muted-foreground font-medium hidden md:table-cell">Date</th>
-          </tr></thead>
-          <tbody>
-            {filtered.map(t => (
-              <tr key={t.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                <td className="p-3 font-medium text-foreground">{t.userName}</td>
-                <td className="p-3 text-center">
-                  <Badge variant="outline" className={`text-[9px] capitalize ${t.type === "subscription" ? "border-primary text-primary" : t.type === "withdrawal" ? "border-accent text-accent" : "border-blue-400 text-blue-400"}`}>{t.type}</Badge>
-                </td>
-                <td className="p-3 text-center font-bold">{t.amount.toLocaleString()}</td>
-                <td className="p-3 text-center">
-                  <Badge className={`text-[9px] border-0 ${t.status === "completed" ? "bg-primary/20 text-primary" : t.status === "failed" ? "bg-destructive/20 text-destructive" : "bg-accent/20 text-accent"}`}>{t.status}</Badge>
-                </td>
-                <td className="p-3 text-muted-foreground hidden sm:table-cell text-[10px]">{t.method}</td>
-                <td className="p-3 text-muted-foreground hidden md:table-cell text-[10px]">{t.createdAt}</td>
-              </tr>
-            ))}
-            {filtered.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">No transactions yet.</td></tr>}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 };

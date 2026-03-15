@@ -23,8 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type Status = "verifying" | "success" | "failed";
 
-const POLL_INTERVAL_MS = 3000;
-const MAX_POLL_ATTEMPTS = 30;
+const POLL_INTERVAL_MS = 1000;
+const MAX_POLL_ATTEMPTS = 90;
 
 const SUCCESSFUL_STATUSES = ["successful", "success", "completed", "paid"];
 const FAILED_STATUSES = ["failed", "cancelled", "canceled", "declined", "error", "reversed"];
@@ -119,7 +119,7 @@ const PaymentSuccess = () => {
         return;
       }
 
-      setPollStatus(`Payment pending — checking again in 3 seconds... (${attempt}/${MAX_POLL_ATTEMPTS})`);
+      setPollStatus(`Payment pending — retrying... (${attempt}/${MAX_POLL_ATTEMPTS})`);
       setTimeout(poll, POLL_INTERVAL_MS);
     };
 
