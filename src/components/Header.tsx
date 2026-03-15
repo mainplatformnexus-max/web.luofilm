@@ -67,10 +67,10 @@ const Header = () => {
   return (
     <>
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="flex items-center justify-between px-4 md:px-8 h-14">
-          <Link to="/" className="flex items-center gap-1.5 shrink-0">
-            <img src={logo} alt="LUO FILM" className="w-7 h-7 rounded-lg object-contain" />
-            <span className="text-foreground font-bold text-sm">LUO FILM</span>
+        <div className="flex items-center justify-between px-2 sm:px-4 md:px-8 h-11 sm:h-14">
+          <Link to="/" className="flex items-center gap-1 shrink-0">
+            <img src={logo} alt="LUO FILM" className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-contain" />
+            <span className="text-foreground font-bold text-xs sm:text-sm hidden sm:block">LUO FILM</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 mx-4 bg-secondary/60 rounded-full px-1.5 py-1 border border-border">
@@ -97,7 +97,7 @@ const Header = () => {
             })}
           </nav>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <GlobalSearch />
             {countryFlag && (
               <div className="hidden sm:flex items-center" title={countryFlag.name}>
@@ -111,15 +111,15 @@ const Header = () => {
             )}
             <button
               onClick={() => navigate("/how-to-use")}
-              className="flex items-center gap-1.5 bg-secondary text-foreground text-[10px] font-medium px-3 py-1.5 rounded-full border border-border hover:bg-secondary/80 transition-all active:scale-95"
+              className="flex items-center gap-1 bg-secondary text-foreground text-[9px] font-medium px-2 py-1 rounded-full border border-border hover:bg-secondary/80 transition-all active:scale-95"
             >
-              <HelpCircle className="w-3 h-3" />Guide
+              <HelpCircle className="w-3 h-3" /><span className="hidden sm:inline">Guide</span>
             </button>
             <button
               onClick={() => navigate("/downloads")}
-              className="flex items-center gap-1.5 bg-secondary text-foreground text-[10px] font-medium px-3 py-1.5 rounded-full border border-border hover:bg-secondary/80 transition-all active:scale-95"
+              className="flex items-center gap-1 bg-secondary text-foreground text-[9px] font-medium px-2 py-1 rounded-full border border-border hover:bg-secondary/80 transition-all active:scale-95"
             >
-              <Download className="w-3 h-3" />Downloads
+              <Download className="w-3 h-3" /><span className="hidden sm:inline">Downloads</span>
             </button>
             {canInstall && (
               <button

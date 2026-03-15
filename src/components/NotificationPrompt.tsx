@@ -188,7 +188,7 @@ export const InAppNotificationContainer = () => {
   const dismiss = (id: number) => setNotifs(p => p.filter(n => n.id !== id));
 
   return (
-    <div className="fixed top-16 right-2 left-2 md:left-auto md:w-[340px] z-[200] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed top-12 sm:top-16 right-2 left-2 md:left-auto md:w-[340px] z-[200] flex flex-col gap-2 pointer-events-none">
       {notifs.map(n => (
         <NotifCard key={n.id} notif={n} onDismiss={() => dismiss(n.id)} />
       ))}
@@ -203,7 +203,11 @@ export const NotificationPrompt = () => {
   useEffect(() => {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
-    if (localStorage.getItem('notification-prompt-dismissed') === 'true') return;
+    const dismissedAt = localStorage.getItem('notification-prompt-dismissed-at');
+    if (dismissedAt) {
+      const days = (Date.now() - Number(dismissedAt)) / (1000 * 60 * 60 * 24);
+      if (days < 3) return;
+    }
     const timer = setTimeout(() => setShow(true), 3000);
     return () => clearTimeout(timer);
   }, []);
@@ -227,13 +231,13 @@ export const NotificationPrompt = () => {
 
   const handleDismiss = () => {
     setShow(false);
-    localStorage.setItem('notification-prompt-dismissed', 'true');
+    localStorage.setItem('notification-prompt-dismissed-at', String(Date.now()));
   };
 
   if (!show) return null;
 
   return (
-    <div className="fixed top-[60px] right-2 left-2 md:left-auto md:w-72 z-[150] animate-in slide-in-from-top-2 fade-in duration-300">
+    <div className="fixed top-[48px] sm:top-[60px] right-2 left-2 md:left-auto md:w-72 z-[150] animate-in slide-in-from-top-2 fade-in duration-300">
       <div className="bg-card border border-primary/30 shadow-2xl rounded-xl p-3 flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Bell className="w-4 h-4 text-primary animate-bounce" />
