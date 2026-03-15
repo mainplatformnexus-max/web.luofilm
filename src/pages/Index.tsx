@@ -337,7 +337,7 @@ const Index = () => {
 
   const tabs = useMemo(() => {
     const t: { id: TabId; label: string; icon: typeof Sparkles; count: number }[] = [
-      { id: "best", label: "Best on LUO FILM", icon: Sparkles, count: bestAll.length },
+      { id: "best", label: "Best", icon: Sparkles, count: bestAll.length },
       { id: "rankings", label: "Top 100", icon: Trophy, count: rankings.length },
     ];
     if (agentContent.length > 0) t.push({ id: "agent", label: "Agent", icon: Users, count: agentContent.length });

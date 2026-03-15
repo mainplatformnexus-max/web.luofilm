@@ -80,25 +80,9 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
   return (
     <>
       <div
-        className={`flex-shrink-0 group cursor-pointer w-full transition-all duration-300 hover:translate-y-[-4px] ${showRank && rankNumber ? "flex items-center" : ""}`}
+        className="flex-shrink-0 group cursor-pointer w-full transition-all duration-300 hover:translate-y-[-4px]"
         onClick={handleClick}
       >
-        {/* Large rank number - Netflix style, vertically centered */}
-        {showRank && rankNumber && (
-          <div className="relative flex-shrink-0 w-[35px] md:w-[50px] flex items-center justify-center -mr-3 z-10">
-            <span
-              className="font-black italic leading-none select-none drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]"
-              style={{
-                fontSize: "clamp(60px, 10vw, 100px)",
-                color: "#9333ea",
-                WebkitTextStroke: "1.5px #9333ea",
-                filter: "drop-shadow(0 0 10px #9333ea / 0.4))",
-              }}
-            >
-              {rankNumber}
-            </span>
-          </div>
-        )}
         <div className="flex-1 min-w-0">
           <div className="relative rounded-sm overflow-hidden mb-0.5 aspect-[2/3] shadow-md group-hover:shadow-primary/20 group-hover:shadow-lg transition-all duration-300">
             <img
@@ -107,6 +91,14 @@ const DramaCard = ({ drama, showRank }: DramaCardProps) => {
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
             />
+            {/* Small green rank badge */}
+            {showRank && rankNumber && (
+              <div className="absolute top-1 left-1 z-10">
+                <span className="bg-primary text-primary-foreground text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-lg leading-none">
+                  #{rankNumber}
+                </span>
+              </div>
+            )}
             {/* Display order number */}
             {drama.displayOrder != null && drama.displayOrder > 0 && !showRank && (
               <div className="absolute top-0 left-0">
